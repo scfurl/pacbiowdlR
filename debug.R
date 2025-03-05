@@ -5,12 +5,43 @@ data_S18 <- read_json_file("/Volumes/furlan_s/sfurlan/250302_leuklong/pbWGS/LL2_
 data_S42 <- read_json_file("/Volumes/furlan_s/sfurlan/250302_leuklong/pbWGS/LL3_S42/20250303_062244_humanwgs_singleton/outputs.json")
 data_SAdd <- read_json_file("/Volumes/furlan_s/sfurlan/250302_leuklong/pbWGS/LL4_SAdd/20250302_231552_humanwgs_singleton/outputs.json")
 
-plot_circos_from_vcf(data_S42$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 15, return_data = T)
+file <- "/Users/sfurlan/Library/CloudStorage/OneDrive-SharedLibraries-FredHutchinsonCancerResearchCenter/Furlan_Lab - General/experiments/leuklong/250302_SCRI/res/LL4_SAdd.small_variants.ann.txt"
 
+plot_snpEff(file)
+
+anns <- vroom(file, guess_max = 1000000)
+flt3 <- anns[(anns$CHROM %in% "chr13" & anns$POS > 28003274 & anns$POS < 28100592),]
+wt1 <- anns[(anns$CHROM %in% "chr11" & anns$POS > 32396330 & anns$POS <  32396400),]
+
+muts <- as.data.frame(rbind(wt1[1,], flt3[51,])) %>% as.data.frame()
+write.csv(muts, "~/Desktop/muts.csv")
+
+annotated_vcf_table <- "/Users/sfurlan/Library/CloudStorage/OneDrive-SharedLibraries-FredHutchinsonCancerResearchCenter/Furlan_Lab - General/experiments/leuklong/250302_SCRI/res/LL4_SAdd.small_variants.clinvar.txt"
+
+ann <- vroom(annotated_vcf_table, guess_max = 1000000) |>
+  filter(!is.na(ALLELEID))
+patho <- filter(ann, grepl("Pathogenic",CLNSIG) | grepl("Likely_pathogenic",CLNSIG)) |> separate("ID", c("ID","unknown"), sep = ";")
+#unique(patho$CLNSIG)
+#nrow(patho)
+as.data.frame(patho) |> gt()
+
+flt3 <- ann[grep("^FLT3", ann$GENEINFO),]
+as.data.frame(flt3) |> gt()
+wt1 <- ann[grep("^WT1", ann$GENEINFO),]
+as.data.frame(wt1) |> gt()
+
+
+
+
+plot_circos_from_vcf(data_S42$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 15, return_data = T)
 plot_circos_from_vcf(data_SAdd$humanwgs_singleton.tertiary_sv_filtered_vcf, highlight = 12, return_data = F, title = "NUP98::NSD1 AML")
 plot_circos_from_vcf(data_S1$humanwgs_singleton.tertiary_sv_filtered_vcf, highlight = 3, return_data = F, title = "EP300::ZNF384 ALL")
 plot_circos_from_vcf(data_S18$humanwgs_singleton.tertiary_sv_filtered_vcf, highlight = 3, return_data = F, thresh = 15, title = "ETV6-RUNX1 ALL")
 plot_circos_from_vcf(data_S42$humanwgs_singleton.tertiary_sv_filtered_vcf, highlight = 5, return_data = F, thresh = 15, title = "PML::RARA APML")
+
+
+
+
 
 
 #BiocManager::install("org.Hs.eg.db", force=T)
@@ -22,7 +53,7 @@ library(TxDb.Hsapiens.UCSC.hg38.knownGene)
 
 chrom_palette <- c(
   "#FF0000", "#FF9900", "#FFCC00", "#00FF00", "#6699FF", "#CC33FF",
-  "#999912", "#999999", "#FF00CC", "#CC0000", "#FFCCCC", "#FFFF00",
+  s"#999912", "#999999", "#FF00CC", "#CC0000", "#FFCCCC", "#FFFF00",
   "#CCFF00", "#358000", "#0000CC", "#99CCFF", "#00FFFF", "#ECFFFF",
   "#9900CC", "#CC99FF", "#996600", "#666600", "#666666", "#CCCCCC",
   "#79CC3B", "#E0EC3B", "#CCC99F"
