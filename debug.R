@@ -1,9 +1,112 @@
 roxygen2::roxygenize()
-library(TxDb.Hsapiens.UCSC.hg38.knownGene)
-library(org.Hs.eg.db)
+data_S1 <- read_json_file("/Volumes/furlan_s/sfurlan/250302_leuklong/pbWGS/LL1_S1/20250302_232026_humanwgs_singleton/outputs.json")
+data_S18 <- read_json_file("/Volumes/furlan_s/sfurlan/250302_leuklong/pbWGS/LL2_S18/20250302_232206_humanwgs_singleton/outputs.json")
+data_S42 <- read_json_file("/Volumes/furlan_s/sfurlan/250302_leuklong/pbWGS/LL3_S42/20250303_062244_humanwgs_singleton/outputs.json")
+data_SAdd <- read_json_file("/Volumes/furlan_s/sfurlan/250302_leuklong/pbWGS/LL4_SAdd/20250302_231552_humanwgs_singleton/outputs.json")
+data_WSU <- read_json_file("/Volumes/furlan_s/sfurlan/pbjay/WSU_AML_ctl/20250210_162200_humanwgs_singleton/outputs.json")
+data_m07 <- read_json_file("/Volumes/furlan_s/sfurlan/pbjay/M07e/20250210_160628_humanwgs_singleton/outputs.json")
+data_K562 <- read_json_file("/Volumes/furlan_s/sfurlan/pacbiorerun/pbWGS/K562/20250211_115553_humanwgs_singleton/outputs.json")
+data_4N <- read_json_file("/Volumes/furlan_s/sfurlan/pacbiorerun/pbWGS/SNF_4N/20250211_181001_humanwgs_singleton/outputs.json")
+data_4M <- read_json_file("/Volumes/furlan_s/sfurlan/pacbiorerun/pbWGS/SNF_4CM/20250211_180912_humanwgs_singleton/outputs.json")
+
+
+gtffile = "/Users/sfurlan/OneDrive - Fred Hutchinson Cancer Center/computation/refs/GTFs/gencode.v47.chr_patch_hapl_scaff.annotation.gtf"
+
+coords <- data.frame(
+  chr = c("chr16", "chr16"),
+  pos = c(4334103, 88877878)
+)
+
+undebug(annotate_genomic_coordinates)
+annotate_genomic_coordinates(coords, gtffile = gtffile, genome = "hg38")
+
+
+
+plot_circos_from_vcf(data_m07$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 20, return_data = T, annotate = T, gtf_file = gtffile)
+
+sv_data <- plot_circos_from_vcf(data_WSU$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 5, return_data = T, annotate = F)
+sv_data <- data.frame(
+  id = 1:(nrow(sv_data) * 2),
+  chr = c(sv_data$chr1, sv_data$chr2),
+  pos = c(sv_data$start1, sv_data$start2)
+)
+
+annotated_sv <- annotate_genomic_coordinates(sv_data, gtffile = gtffile, genome = "hg38")
+
+
+plot_circos_from_vcf(data_m07$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 20, highlight = 12, return_data = F, title = "M-07e")
+
+
+vcf <- readVcf(data_m07$humanwgs_singleton.tertiary_sv_filtered_vcf, genome = "GRCh38")
+vcf <- vcf[vcf@info$SVTYPE=="BND",]
+vcf <- vcf[vcf@fixed$FILTER=="PASS"]
+vcf <- vcf[vcf@info$NotFullySpanned=="FALSE"]
+vcf <- vcf[grepl("protein_coding", sapply(vcf@info$BCSQ, function(bs){ifelse(length(bs)==0, NA, bs[1])})),]
+#vcf <- vcf[vcf@assays@data$DP[,1]>20,]
+vcf@info$BCSQ@unlistData
+vcf[29,]@info$BCSQ
+vcf[29,]@rowRanges
+
+
+
+
+
+
+chrom_palette <- c(
+  "#FF0000", "#FF9900", "#FFCC00", "#00FF00", "#6699FF", "#CC33FF",
+  "#999912", "#999999", "#FF00CC", "#CC0000", "#FFCCCC", "#FFFF00",
+  "#CCFF00", "#358000", "#0000CC", "#99CCFF", "#00FFFF", "#ECFFFF",
+  "#9900CC", "#CC99FF", "#996600", "#666600", "#666666", "#CCCCCC",
+  "#79CC3B", "#E0EC3B", "#CCC99F"
+)
+chr_colors <- setNames(chrom_palette, paste0("chr", c(1:22, "X")))
+
+
+generateCNAPlotDiscoverGenes(
+  depth_bigwig_file  =   data_K562$humanwgs_singleton.cnv_depth_bw,
+  variant_file       =   data_K562$humanwgs_singleton.cnv_vcf,
+  txdb               = TxDb.Hsapiens.UCSC.hg38.knownGene,
+  downsample         = 0.8,
+  samplename         = "MySample",
+  return_data        = F, colors = chrom_palette, chr_filter = "chr6"
+)
+
+
+file = "/Users/sfurlan/OneDrive - Fred Hutchinson Cancer Center/computation/refs/GTFs/gencode.v47.chr_patch_hapl_scaff.annotation.gtf"
 library(rtracklayer)
-txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
-genesGR <- genes(txdb)
+my_obj <- import(file)
+class(my_obj)
+my_obj <- my_obj[mcols(my_obj)$type=="gene",]
+
+my_obj <- sort(my_obj)
+
+bed_df <- data.frame(
+  chrom = seqnames(my_obj),
+  start = start(my_obj) - 1,  # BED format is 0-based for start positions
+  end = end(my_obj),
+  name = mcols(my_obj)$gene_name,
+  strand = as.character(strand(my_obj))
+)
+
+
+write.table(bed_df, file.path("/Users/sfurlan/Library/CloudStorage/OneDrive-SharedLibraries-FredHutchinsonCancerCenter/Furlan_Lab - General/experiments/leuklong/integration/fire_atac", "GRCh38_genecode47.bed"), sep="\t", quote=FALSE, row.names=FALSE, col.names=FALSE)
+
+
+
+
+
+
+
+
+
+
+
+#library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+#library(org.Hs.eg.db)
+#library(rtracklayer)
+#txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+#library(freerange)
+#genesGR <- genes(txdb)
 # # Annotate genes with symbols using org.Hs.eg.db
 gene_ids <- names(genesGR)
 gene_symbols <- mapIds(org.Hs.eg.db,
@@ -49,9 +152,11 @@ bed_df <- data.frame(
 write.table(bed_df, file.path("/Users/sfurlan/Library/CloudStorage/OneDrive-SharedLibraries-FredHutchinsonCancerCenter/Furlan_Lab - General/experiments/leuklong/integration/fire_atac", "GRCh38.bed"), sep="\t", quote=FALSE, row.names=FALSE, col.names=FALSE)
 
 
+#BiocManager::install("bambu")
+library(bambu)
 
-
-
+gtf <- "/Users/sfurlan/Library/CloudStorage/OneDrive-FredHutchinsonCancerCenter/computation/refs/GTFs/gencode.v46.annotation.gtf"
+gr <- readFromGTF(gtf, keep.extra.columns = NULL)
 
 
 
@@ -105,6 +210,13 @@ data_S1 <- read_json_file("/Volumes/furlan_s/sfurlan/250302_leuklong/pbWGS/LL1_S
 data_S18 <- read_json_file("/Volumes/furlan_s/sfurlan/250302_leuklong/pbWGS/LL2_S18/20250302_232206_humanwgs_singleton/outputs.json")
 data_S42 <- read_json_file("/Volumes/furlan_s/sfurlan/250302_leuklong/pbWGS/LL3_S42/20250303_062244_humanwgs_singleton/outputs.json")
 data_SAdd <- read_json_file("/Volumes/furlan_s/sfurlan/250302_leuklong/pbWGS/LL4_SAdd/20250302_231552_humanwgs_singleton/outputs.json")
+
+
+data_WSU <- read_json_file("/Volumes/furlan_s/sfurlan/pbjay/WSU_AML_ctl/20250210_162200_humanwgs_singleton/outputs.json")
+data_m07 <- read_json_file("/Volumes/furlan_s/sfurlan/pbjay/M07e/20250210_160628_humanwgs_singleton/outputs.json")
+data_K562 <- read_json_file("/Volumes/furlan_s/sfurlan/pacbiorerun/pbWGS/K562/20250211_115553_humanwgs_singleton/outputs.json")
+data_4N <- read_json_file("/Volumes/furlan_s/sfurlan/pacbiorerun/pbWGS/SNF_4N/20250211_181001_humanwgs_singleton/outputs.json")
+data_4M <- read_json_file("/Volumes/furlan_s/sfurlan/pacbiorerun/pbWGS/SNF_4CM/20250211_180912_humanwgs_singleton/outputs.json")
 
 file <- "/Users/sfurlan/Library/CloudStorage/OneDrive-SharedLibraries-FredHutchinsonCancerResearchCenter/Furlan_Lab - General/experiments/leuklong/250302_SCRI/res/LL4_SAdd.small_variants.ann.txt"
 
@@ -196,10 +308,26 @@ plot_circos_from_vcf(data_S1$humanwgs_singleton.tertiary_sv_filtered_vcf, highli
 plot_circos_from_vcf(data_S18$humanwgs_singleton.tertiary_sv_filtered_vcf, highlight = 3, return_data = F, thresh = 15, title = "ETV6-RUNX1 ALL")
 plot_circos_from_vcf(data_S42$humanwgs_singleton.tertiary_sv_filtered_vcf, highlight = 5, return_data = F, thresh = 15, title = "PML::RARA APML")
 
+plot_circos_from_vcf(data_m07$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 20, return_data = T)
+plot_circos_from_vcf(data_m07$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 20, highlight = 12, return_data = F, title = "M-07e")
 
 
+plot_circos_from_vcf(data_WSU$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 1, return_data = T)
+plot_circos_from_vcf(data_m07$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 20, highlight = 12, return_data = F, title = "M-07e")
+plot_circos_from_vcf(data_WSU$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 10, return_data = F, title = "WSU-AML")
 
+vcf <- readVcf(data_m07$humanwgs_singleton.tertiary_sv_filtered_vcf, genome = "GRCh38")
+vcf <- vcf[vcf@info$SVTYPE=="BND",]
+vcf <- vcf[vcf@fixed$FILTER=="PASS"]
+vcf <- vcf[vcf@info$NotFullySpanned=="FALSE"]
+vcf <- vcf[grepl("protein_coding", sapply(vcf@info$BCSQ, function(bs){ifelse(length(bs)==0, NA, bs[1])})),]
+#vcf <- vcf[vcf@assays@data$DP[,1]>20,]
+vcf@info$BCSQ@unlistData
+vcf[29,]@info$BCSQ
+vcf[29,]@rowRanges
 
+library(bumphunter)
+matchGenes(vcf[29,]@rowRanges)
 
 #BiocManager::install("org.Hs.eg.db", force=T)
 library(pacbiowdlR)
