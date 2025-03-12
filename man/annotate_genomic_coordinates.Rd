@@ -10,16 +10,13 @@ annotate_genomic_coordinates(
   gtffile,
   tss_upstream = 2000,
   tss_downstream = 200,
-  gene_types = NULL,
-  transcript_types = NULL,
-  return_all_as_df = TRUE
+  cache_gtf = TRUE
 )
 }
 \arguments{
-\item{coordinates}{Data frame or list. If data frame, must contain 'chr' and 'pos' columns.
-If list, can be a list of chr/pos pairs or a list with 'chr' and 'pos' vectors of equal length.}
+\item{coordinates}{Data frame with 'chr' and 'pos' columns}
 
-\item{genome}{Character. Genome build name (e.g., "hg38", "hg19", "mm10") for reference}
+\item{genome}{Character. Genome build name (e.g., "hg38", "hg19", "mm10")}
 
 \item{gtffile}{Character. Path to the GTF annotation file}
 
@@ -27,20 +24,16 @@ If list, can be a list of chr/pos pairs or a list with 'chr' and 'pos' vectors o
 
 \item{tss_downstream}{Numeric. Bases downstream of TSS to include in promoter (default: 200)}
 
-\item{gene_types}{Character vector. Types of genes to include (default: all types)}
-
-\item{transcript_types}{Character vector. Types of transcripts to include (default: all types)}
-
-\item{return_all_as_df}{Logical. Whether to return all results as a single data frame (default: TRUE)}
+\item{cache_gtf}{Logical. Whether to cache the GTF data between calls (default: TRUE)}
 }
 \value{
-List of annotation results or a data frame with all annotations
+Data frame with annotation results
 }
 \description{
-Annotates one or more genomic coordinates based on a GTF annotation file
+Improved function to annotate genomic coordinates based on a GTF file
 }
 \examples{
 # Annotate multiple positions
-coords <- data.frame(chr = c("chr1", "chr16", "chr7"), pos = c(1000000, 4334103, 55259515))
+coords <- data.frame(chr = c("chr1", "chr16"), pos = c(1000000, 4334103))
 results <- annotate_genomic_coordinates(coords, "hg38", "path/to/gencode.v38.annotation.gtf")
 }

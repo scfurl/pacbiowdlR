@@ -9,30 +9,17 @@ data_K562 <- read_json_file("/Volumes/furlan_s/sfurlan/pacbiorerun/pbWGS/K562/20
 data_4N <- read_json_file("/Volumes/furlan_s/sfurlan/pacbiorerun/pbWGS/SNF_4N/20250211_181001_humanwgs_singleton/outputs.json")
 data_4M <- read_json_file("/Volumes/furlan_s/sfurlan/pacbiorerun/pbWGS/SNF_4CM/20250211_180912_humanwgs_singleton/outputs.json")
 
+gtffile = "/Users/sfurlan/Library/CloudStorage/OneDrive-FredHutchinsonCancerResearchCenter/computation/refs/GTFs/gencode.v47.chr_patch_hapl_scaff.annotation.gtf"
+#gtffile = "/Users/sfurlan/OneDrive - Fred Hutchinson Cancer Center/computation/refs/GTFs/gencode.v47.chr_patch_hapl_scaff.annotation.gtf"
 
-gtffile = "/Users/sfurlan/OneDrive - Fred Hutchinson Cancer Center/computation/refs/GTFs/gencode.v47.chr_patch_hapl_scaff.annotation.gtf"
-
-coords <- data.frame(
-  chr = c("chr16", "chr16"),
-  pos = c(4334103, 88877878)
-)
-
-undebug(annotate_genomic_coordinates)
-annotate_genomic_coordinates(coords, gtffile = gtffile, genome = "hg38")
+fusionhg19 <- "/Users/sfurlan/Downloads/combinedFGDB2genes_information_genesymbol_arranged_real_100324.txt"
+liftover_fusion_coordinates(fusionhg19,
+                                        output_dir = "fusionhg38.txt")
+fusions <- plot_circos_from_vcf(data_m07$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 20, return_data = T, annotate = T, gtf_file = gtffile)
+results <- compare_fusions(sequenced_fusions = fusions, liftover_db = "fusionDB_hg38.txt", window_size = 100)
 
 
-
-plot_circos_from_vcf(data_m07$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 20, return_data = T, annotate = T, gtf_file = gtffile)
-
-sv_data <- plot_circos_from_vcf(data_WSU$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 5, return_data = T, annotate = F)
-sv_data <- data.frame(
-  id = 1:(nrow(sv_data) * 2),
-  chr = c(sv_data$chr1, sv_data$chr2),
-  pos = c(sv_data$start1, sv_data$start2)
-)
-
-annotated_sv <- annotate_genomic_coordinates(sv_data, gtffile = gtffile, genome = "hg38")
-
+fusions <- plot_circos_from_vcf(data_WSU$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 2, return_data = T, annotate = T, gtf_file = gtffile)
 
 plot_circos_from_vcf(data_m07$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 20, highlight = 12, return_data = F, title = "M-07e")
 
