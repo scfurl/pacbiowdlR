@@ -9,17 +9,37 @@ data_K562 <- read_json_file("/Volumes/furlan_s/sfurlan/pacbiorerun/pbWGS/K562/20
 data_4N <- read_json_file("/Volumes/furlan_s/sfurlan/pacbiorerun/pbWGS/SNF_4N/20250211_181001_humanwgs_singleton/outputs.json")
 data_4M <- read_json_file("/Volumes/furlan_s/sfurlan/pacbiorerun/pbWGS/SNF_4CM/20250211_180912_humanwgs_singleton/outputs.json")
 
-gtffile = "/Users/sfurlan/Library/CloudStorage/OneDrive-FredHutchinsonCancerResearchCenter/computation/refs/GTFs/gencode.v47.chr_patch_hapl_scaff.annotation.gtf"
-#gtffile = "/Users/sfurlan/OneDrive - Fred Hutchinson Cancer Center/computation/refs/GTFs/gencode.v47.chr_patch_hapl_scaff.annotation.gtf"
-
-fusionhg19 <- "/Users/sfurlan/Downloads/combinedFGDB2genes_information_genesymbol_arranged_real_100324.txt"
-liftover_fusion_coordinates(fusionhg19,
-                                        output_dir = "fusionhg38.txt")
-fusions <- plot_circos_from_vcf(data_m07$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 20, return_data = T, annotate = T, gtf_file = gtffile)
-results <- compare_fusions(sequenced_fusions = fusions, liftover_db = "fusionDB_hg38.txt", window_size = 100)
+#gtffile = "/Users/sfurlan/Library/CloudStorage/OneDrive-FredHutchinsonCancerResearchCenter/computation/refs/GTFs/gencode.v47.chr_patch_hapl_scaff.annotation.gtf"
+gtffile = "/Users/sfurlan/OneDrive - Fred Hutchinson Cancer Center/computation/refs/GTFs/gencode.v47.chr_patch_hapl_scaff.annotation.gtf"
 
 
-fusions <- plot_circos_from_vcf(data_WSU$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 2, return_data = T, annotate = T, gtf_file = gtffile)
+fusions_S1 <- plot_circos_from_vcf(data_S1$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 2, return_data = T, annotate = T, gtf_file = gtffile)
+fusions_S18 <- plot_circos_from_vcf(data_S18$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 2, return_data = T, annotate = T, gtf_file = gtffile)
+fusions_S42 <- plot_circos_from_vcf(data_S42$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 2, return_data = T, annotate = T, gtf_file = gtffile)
+fusions_SAdd <- plot_circos_from_vcf(data_SAdd$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 2, return_data = T, annotate = T, gtf_file = gtffile)
+fusions_WSU <- plot_circos_from_vcf(data_WSU$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 2, return_data = T, annotate = T, gtf_file = gtffile)
+fusions_m07 <- plot_circos_from_vcf(data_m07$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 2, return_data = T, annotate = T, gtf_file = gtffile)
+fusions_K562 <- plot_circos_from_vcf(data_K562$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 2, return_data = T, annotate = T, gtf_file = gtffile)
+fusions_4N <- plot_circos_from_vcf(data_4N$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 2, return_data = T, annotate = T, gtf_file = gtffile)
+fusions_4M <- plot_circos_from_vcf(data_4M$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 2, return_data = T, annotate = T, gtf_file = gtffile)
+
+flist <- list(fusions_S1, fusions_S18, fusions_S42, fusions_SAdd, fusions_WSU, fusions_m07, fusions_K562, fusions_4N, fusions_4M)
+
+matches <- lapply(flist, function(fusion) {match_neosplice_fusions(
+  seq_input = fusion,
+  db_file = file.path("inst", "extdata", "fusions", "NeoSplice_hg38_inframe_fusion.txt.gz"), breakpoint_tolerance = 200000
+)})
+
+
+match_fusion_genes(
+  seq_input = flist[[4]],
+  db_file = file.path("inst", "extdata", "fusions", "NeoSplice_hg38_inframe_fusion.txt.gz"), breakpoint_tolerance = 200000
+)
+
+fudb<-data.table::fread(file.path("inst", "extdata", "fusions", "NeoSplice_hg38_inframe_fusion.txt.gz"))
+fudb[fudb$gene1 %in% "NUP98" & fudb$gene2 %in% "NSD1",]
+
+
 
 plot_circos_from_vcf(data_m07$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 20, highlight = 12, return_data = F, title = "M-07e")
 
