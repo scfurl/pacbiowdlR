@@ -7,7 +7,7 @@
 process_fusion_list(
   fusion_list,
   db_file,
-  breakpoint_tolerance = 1e+05,
+  breakpoint_tolerance = 1,
   verbose = TRUE
 )
 }
