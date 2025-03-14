@@ -19,62 +19,89 @@
 #' # Annotate multiple positions
 #' coords <- data.frame(chr = c("chr1", "chr16"), pos = c(1000000, 4334103))
 #' results <- annotate_genomic_coordinates(coords, "hg38", "path/to/gencode.v38.annotation.gtf")
-annotate_genomic_coordinates <- function(coordinates, genome, gtffile,
-                                         tss_upstream = 2000, tss_downstream = 200,
-                                         cache_gtf = TRUE) {
-  # Load required packages
-  suppressPackageStartupMessages({
-    library(rtracklayer)
-    library(GenomicRanges)
-    library(IRanges)
-    library(GenomeInfoDb)
-  })
+# annotate_genomic_coordinates <- function(coordinates, genome, gtffile,
+#                                          tss_upstream = 2000, tss_downstream = 200,
+#                                          cache_gtf = TRUE) {
+  # # Load required packages
+  # suppressPackageStartupMessages({
+  #   library(rtracklayer)
+  #   library(GenomicRanges)
+  #   library(IRanges)
+  #   library(GenomeInfoDb)
+  # })
+  #
+  # # Validate input
+  # if (!is.data.frame(coordinates) || !all(c("chr", "pos") %in% colnames(coordinates))) {
+  #   stop("Input must be a data frame with 'chr' and 'pos' columns")
+  # }
+  #
+  # if (!file.exists(gtffile)) {
+  #   stop("GTF file not found: ", gtffile)
+  # }
+  #
+  # # Add ID column if not present
+  # if (!"id" %in% colnames(coordinates)) {
+  #   coordinates$id <- 1:nrow(coordinates)
+  # }
+  #
+  # # Use a cached version of the GTF data if available and requested
+  # gtf_env <- new.env()
+  # gtf_key <- paste0("gtf_", digest::digest(gtffile))
+  #
+  # if (cache_gtf && exists(gtf_key, envir = gtf_env)) {
+  #   message("Using cached GTF data...")
+  #   gtf_data <- get(gtf_key, envir = gtf_env)
+  #   genes <- get(paste0(gtf_key, "_genes"), envir = gtf_env)
+  # } else {
+  #   # Import GTF file only once
+  #   message("Importing GTF file...")
+  #   gtf_data <- import(gtffile)
+  #
+  #   # Extract genes
+  #   genes <- gtf_data[gtf_data$type == "gene"]
+  #
+  #   # Ensure genes have a symbol
+  #   if ("gene_name" %in% names(mcols(genes))) {
+  #     genes$symbol <- genes$gene_name
+  #   } else if ("gene_id" %in% names(mcols(genes))) {
+  #     genes$symbol <- genes$gene_id
+  #   } else {
+  #     genes$symbol <- rep(NA, length(genes))
+  #   }
+  #
+  #   # Cache the data if requested
+  #   if (cache_gtf) {
+  #     assign(gtf_key, gtf_data, envir = gtf_env)
+  #     assign(paste0(gtf_key, "_genes"), genes, envir = gtf_env)
+  #   }
+  # }
 
-  # Validate input
-  if (!is.data.frame(coordinates) || !all(c("chr", "pos") %in% colnames(coordinates))) {
-    stop("Input must be a data frame with 'chr' and 'pos' columns")
-  }
 
-  if (!file.exists(gtffile)) {
-    stop("GTF file not found: ", gtffile)
-  }
+  annotate_genomic_coordinates <- function(coordinates, genome, gtffile,
+                                           tss_upstream = 2000, tss_downstream = 200,
+                                           cache_gtf = TRUE) {
+    # Load required packages
+    suppressPackageStartupMessages({
+      library(rtracklayer)
+      library(GenomicRanges)
+      library(IRanges)
+      library(GenomeInfoDb)
+    })
 
-  # Add ID column if not present
-  if (!"id" %in% colnames(coordinates)) {
-    coordinates$id <- 1:nrow(coordinates)
-  }
-
-  # Use a cached version of the GTF data if available and requested
-  gtf_env <- new.env()
-  gtf_key <- paste0("gtf_", digest::digest(gtffile))
-
-  if (cache_gtf && exists(gtf_key, envir = gtf_env)) {
-    message("Using cached GTF data...")
-    gtf_data <- get(gtf_key, envir = gtf_env)
-    genes <- get(paste0(gtf_key, "_genes"), envir = gtf_env)
-  } else {
-    # Import GTF file only once
-    message("Importing GTF file...")
-    gtf_data <- import(gtffile)
-
-    # Extract genes
-    genes <- gtf_data[gtf_data$type == "gene"]
-
-    # Ensure genes have a symbol
-    if ("gene_name" %in% names(mcols(genes))) {
-      genes$symbol <- genes$gene_name
-    } else if ("gene_id" %in% names(mcols(genes))) {
-      genes$symbol <- genes$gene_id
-    } else {
-      genes$symbol <- rep(NA, length(genes))
+    # Validate input
+    if (!is.data.frame(coordinates) || !all(c("chr", "pos") %in% colnames(coordinates))) {
+      stop("Input must be a data frame with 'chr' and 'pos' columns")
     }
 
-    # Cache the data if requested
-    if (cache_gtf) {
-      assign(gtf_key, gtf_data, envir = gtf_env)
-      assign(paste0(gtf_key, "_genes"), genes, envir = gtf_env)
+    # Add ID column if not present
+    if (!"id" %in% colnames(coordinates)) {
+      coordinates$id <- 1:nrow(coordinates)
     }
-  }
+
+    # Use our package-level cache
+    gtf_result <- load_cached_gtf(gtffile, force = !cache_gtf)
+    gtf_data <- gtf_result$gtf_data
+    genes <- gtf_result$genes
 
   # Create result dataframe
   results <- data.frame(

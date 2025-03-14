@@ -8,25 +8,40 @@ library(IRanges)
 library(GenomeInfoDb)
 
 # Function to read gzipped VCF and generate a Circos plot with annotations
+# get_fusions_from_vcf <- function(vcf_file, gtf_file = NULL, genome = "hg38",
+#                                  title = "", thresh = 20,
+#                                  allowed = paste0("chr", c(1:22)),
+#                                  highlight = NULL, plot = FALSE,
+#                                  filter = c("pass", "fully_spanned", "protein_coding", "has_strand"),
+#                                  annotate = FALSE,
+#                                  tss_upstream = 2000, tss_downstream = 200) {
+#   # Check if file exists
+#   if (!file.exists(vcf_file)) {
+#     stop(paste("Error: File not found:", vcf_file))
+#   }
+#
+#   # Check if GTF file exists if annotation is requested
+#   if (annotate && is.null(gtf_file)) {
+#     stop("Error: GTF file required for annotation. Please provide gtf_file parameter.")
+#   }
+#
+#   if (annotate && !file.exists(gtf_file)) {
+#     stop(paste("Error: GTF file not found:", gtf_file))
+#   }
+
 get_fusions_from_vcf <- function(vcf_file, gtf_file = NULL, genome = "hg38",
                                  title = "", thresh = 20,
                                  allowed = paste0("chr", c(1:22)),
                                  highlight = NULL, plot = FALSE,
-                                 filter = c("pass", "fully_spanned", "protein_coding"),
+                                 filter = c("pass", "fully_spanned", "protein_coding", "has_strand"),
                                  annotate = FALSE,
                                  tss_upstream = 2000, tss_downstream = 200) {
-  # Check if file exists
-  if (!file.exists(vcf_file)) {
-    stop(paste("Error: File not found:", vcf_file))
-  }
+  # ... existing code ...
 
-  # Check if GTF file exists if annotation is requested
-  if (annotate && is.null(gtf_file)) {
-    stop("Error: GTF file required for annotation. Please provide gtf_file parameter.")
-  }
-
-  if (annotate && !file.exists(gtf_file)) {
-    stop(paste("Error: GTF file not found:", gtf_file))
+  # If annotation is requested, preload the GTF file
+  if (annotate && !is.null(gtf_file)) {
+    # This will cache the GTF file if not already cached
+    load_cached_gtf(gtf_file)
   }
 
   # Read VCF file
@@ -80,6 +95,7 @@ get_fusions_from_vcf <- function(vcf_file, gtf_file = NULL, genome = "hg38",
     annotations <- annotate_genomic_coordinates(coord_df, genome, gtf_file,
                                                 tss_upstream, tss_downstream)
 
+
     # Split annotations back into breakpoint1 and breakpoint2
     n <- nrow(sv_data)
     bp1_annotations <- annotations[1:n, ]
@@ -96,6 +112,7 @@ get_fusions_from_vcf <- function(vcf_file, gtf_file = NULL, genome = "hg38",
     sv_data$bp2_gene_strand <- bp2_annotations$gene_strand
     sv_data$bp2_type <- bp2_annotations$location_type
 
+
     # For intergenic regions, add nearest genes
     sv_data$bp1_upstream_gene <- bp1_annotations$upstream_gene
     sv_data$bp1_upstream_dist <- bp1_annotations$upstream_distance
@@ -106,6 +123,11 @@ get_fusions_from_vcf <- function(vcf_file, gtf_file = NULL, genome = "hg38",
     sv_data$bp2_upstream_dist <- bp2_annotations$upstream_distance
     sv_data$bp2_downstream_gene <- bp2_annotations$downstream_gene
     sv_data$bp2_downstream_dist <- bp2_annotations$downstream_distance
+
+    if("has_strand" %in% filter){
+      sv_data <- sv_data[sv_data$bp1_gene_strand %in% c("+", "-"),]
+      sv_data <- sv_data[sv_data$bp2_gene_strand %in% c("+", "-"),]
+    }
 
     # Create fusion name column (Gene1--Gene2)
     sv_data$fusion_name <- paste0(
@@ -1643,7 +1665,7 @@ match_neosplice_fusions_with_sequence <- function(seq_input, db_file, output_fil
   }
 
   if (verbose) cat("Parsing NeoSplice fusion database...\n")
-  db_fusions <- parse_neosplice_database(db_file)
+  db_fusions <- get_neosplice_db(db_file)
   if (verbose) cat(paste("Found", nrow(db_fusions), "database fusions\n"))
 
   # Check if fuse_contig column exists in database
@@ -1870,3 +1892,511 @@ match_neosplice_fusions_with_sequence <- function(seq_input, db_file, output_fil
 #   add_sequence_match = TRUE,
 #   seq_column = "predicted_fusion_sequence"
 # )
+
+#' Match sequenced fusions with NeoSplice database with complete match detection
+#'
+#' Enhanced version of match_neosplice_fusions that identifies matches meeting all criteria:
+#' gene names, positions, and sequence similarity.
+#'
+#' @param seq_input Either a file path to sequenced fusions or a data frame containing fusion data
+#' @param db_file Path to the NeoSplice database file (can be gzipped)
+#' @param output_file Optional path to save results as CSV (NULL to skip saving)
+#' @param breakpoint_tolerance Number of base pairs of tolerance when matching
+#'   breakpoint positions (default: 100000)
+#' @param sequence_similarity_threshold Minimum percent identity required for sequence match (default: 60)
+#' @param verbose Whether to print progress messages (default TRUE)
+#' @param seq_column Name of the column containing predicted fusion sequences (default: "predicted_fusion_sequence")
+#' @param max_candidates Maximum number of candidates to test for sequence similarity (default: 50)
+#'
+#' @return Data frame of fusion matches with detailed information including complete matches
+#' @export
+#'
+match_neosplice_fusions_complete <- function(seq_input, db_file, output_file = NULL,
+                                             breakpoint_tolerance = 100000,
+                                             sequence_similarity_threshold = 60,
+                                             verbose = TRUE,
+                                             seq_column = "predicted_fusion_sequence",
+                                             max_candidates = 50) {
+  # Parse input files
+  if (verbose) cat("Parsing sequenced fusions...\n")
+  seq_fusions <- if (is.data.frame(seq_input)) {
+    seq_input
+  } else {
+    parse_sequenced_fusions(seq_input)
+  }
+
+  if (verbose) cat(paste("Found", nrow(seq_fusions), "sequenced fusions\n"))
+
+  # Print debug info about columns
+  if (verbose) {
+    cat("Available columns in sequenced fusions:\n")
+    cat(paste(colnames(seq_fusions), collapse = ", "), "\n")
+  }
+
+  # Check if sequence column exists
+  if (!seq_column %in% colnames(seq_fusions)) {
+    warning(paste("Sequence column", seq_column, "not found in input data. Sequence matching will be skipped."))
+    has_sequences <- FALSE
+  } else {
+    has_sequences <- TRUE
+  }
+
+  if (verbose) cat("Parsing NeoSplice fusion database...\n")
+  db_fusions <- get_neosplice_db(db_file)
+  if (verbose) cat(paste("Found", nrow(db_fusions), "database fusions\n"))
+
+  # Check if fuse_contig column exists in database
+  if (!"fuse_contig" %in% colnames(db_fusions)) {
+    warning("'fuse_contig' column not found in database. Available columns:")
+    cat(paste(colnames(db_fusions), collapse = ", "))
+    has_sequences <- FALSE
+  }
+
+  # Initialize results data frame
+  matches <- data.frame()
+
+  # Find matches for each sequenced fusion
+  if (verbose) cat("Finding matches...\n")
+
+  for (i in 1:nrow(seq_fusions)) {
+    seq_fusion <- seq_fusions[i, ]
+    if (verbose) cat(paste0("Processing sequenced fusion #", i, "\n"))
+
+    # Check if required columns exist
+    has_gene1 <- "bp1_gene" %in% colnames(seq_fusion) && !is.na(seq_fusion$bp1_gene)
+    has_gene2 <- "bp2_gene" %in% colnames(seq_fusion) && !is.na(seq_fusion$bp2_gene)
+    has_chr1 <- "chr1" %in% colnames(seq_fusion) && !is.na(seq_fusion$chr1)
+    has_chr2 <- "chr2" %in% colnames(seq_fusion) && !is.na(seq_fusion$chr2)
+    has_pos1 <- "start1" %in% colnames(seq_fusion) && !is.na(seq_fusion$start1)
+    has_pos2 <- "start2" %in% colnames(seq_fusion) && !is.na(seq_fusion$start2)
+
+    # Skip if essential data is missing
+    if (!has_gene1 || !has_gene2 || !has_chr1 || !has_chr2 || !has_pos1 || !has_pos2) {
+      if (verbose) cat("  Missing essential data, skipping...\n")
+      next
+    }
+
+    pos1 <- as.numeric(seq_fusion$start1)
+    pos2 <- as.numeric(seq_fusion$start2)
+
+    # 1. Match by gene names (exact match)
+    if (verbose) cat("  Finding gene matches...\n")
+    gene_matches <- tryCatch({
+      db_fusions %>%
+        filter(gene1 == seq_fusion$bp1_gene & gene2 == seq_fusion$bp2_gene)
+    }, error = function(e) {
+      message("Error in gene matching: ", e$message)
+      return(data.frame())
+    })
+
+    if (nrow(gene_matches) > 0) {
+      gene_matches$match_type <- "Exact gene match"
+      if (verbose) cat(paste("  Found", nrow(gene_matches), "gene matches\n"))
+    } else {
+      if (verbose) cat("  No gene matches found\n")
+    }
+
+    # 2. Match by chromosomes and breakpoint positions
+    if (verbose) cat("  Finding position matches...\n")
+    pos_matches <- tryCatch({
+      # Direct matches: chr1→gene1_chro & chr2→gene2_chro
+      db_fusions %>%
+        filter(
+          # Chromosomes match
+          gene1_chro == seq_fusion$chr1 &
+            gene2_chro == seq_fusion$chr2 &
+            # Positions are near gene locations
+            (pos1 >= as.numeric(sub("-.*$", "", gene1_txt)) - breakpoint_tolerance &
+               pos1 <= as.numeric(sub("^.*-", "", gene1_txt)) + breakpoint_tolerance) &
+            (pos2 >= as.numeric(sub("-.*$", "", gene2_txt)) - breakpoint_tolerance &
+               pos2 <= as.numeric(sub("^.*-", "", gene2_txt)) + breakpoint_tolerance)
+        )
+    }, error = function(e) {
+      message("Error in position matching: ", e$message)
+      return(data.frame())
+    })
+
+    if (nrow(pos_matches) > 0) {
+      pos_matches$match_type <- "Position match"
+      if (verbose) cat(paste("  Found", nrow(pos_matches), "position matches\n"))
+    } else {
+      if (verbose) cat("  No position matches found\n")
+    }
+
+    # 3. Find the overlap of gene and position matches (these already meet two criteria)
+    gene_pos_matches <- intersect(
+      if (nrow(gene_matches) > 0) gene_matches$fuse_contig else character(0),
+      if (nrow(pos_matches) > 0) pos_matches$fuse_contig else character(0)
+    )
+
+    if (length(gene_pos_matches) > 0) {
+      if (verbose) cat(paste("  Found", length(gene_pos_matches), "matches meeting both gene and position criteria\n"))
+    }
+
+    # 4. Sequence matching if enabled
+    seq_matches <- data.frame()
+
+    if (has_sequences) {
+      if (verbose) cat("  Finding sequence matches...\n")
+      # Get the predicted fusion sequence
+      pred_seq <- seq_fusion[[seq_column]]
+
+      if (!is.na(pred_seq) && nchar(pred_seq) > 0) {
+        # Create a combined set of candidates for sequence matching
+        # Start with any gene+position matches (high priority)
+        candidates <- db_fusions %>%
+          filter(fuse_contig %in% gene_pos_matches)
+
+        if (nrow(candidates) == 0) {
+          # If no gene+position matches, use gene matches and position matches
+          candidates <- bind_rows(
+            if (nrow(gene_matches) > 0) gene_matches else NULL,
+            if (nrow(pos_matches) > 0) pos_matches else NULL
+          ) %>% distinct()
+        }
+
+        if (nrow(candidates) == 0) {
+          # If still no candidates, try the entire database (with limits)
+          filtered_db <- db_fusions
+
+          # Take a subset if too many candidates
+          if (nrow(filtered_db) > max_candidates) {
+            if (verbose) cat(paste("  Sampling from", nrow(filtered_db), "candidates\n"))
+            filtered_db <- filtered_db[sample(nrow(filtered_db), max_candidates), ]
+          }
+
+          candidates <- filtered_db
+        }
+
+        # Calculate sequence similarity for all candidates
+        if (nrow(candidates) > 0) {
+          if (verbose) cat(paste("  Calculating sequence similarity for", nrow(candidates), "candidates\n"))
+
+          # Calculate similarity scores for each candidate
+          similarity_scores <- numeric(nrow(candidates))
+          success_count <- 0
+          error_count <- 0
+
+          for (j in 1:nrow(candidates)) {
+            db_seq <- candidates$fuse_contig[j]
+            if (!is.na(db_seq) && nchar(db_seq) > 0) {
+              # Use tryCatch to avoid stopping on errors
+              similarity_scores[j] <- tryCatch({
+                score <- calculate_sequence_similarity(pred_seq, db_seq)
+                success_count <- success_count + 1
+                score
+              }, error = function(e) {
+                error_count <- error_count + 1
+                if (verbose && error_count <= 3) cat(paste("  Error calculating similarity:", e$message, "\n"))
+                NA
+              })
+            } else {
+              similarity_scores[j] <- NA
+            }
+          }
+
+          # Add similarity scores to candidates
+          candidates$sequence_similarity <- similarity_scores
+
+          # Filter candidates by similarity threshold
+          seq_matches <- candidates %>%
+            filter(!is.na(sequence_similarity) & sequence_similarity >= sequence_similarity_threshold) %>%
+            arrange(desc(sequence_similarity))
+
+          if (nrow(seq_matches) > 0) {
+            # Mark sequence matches based on what other criteria they meet
+            seq_matches$match_type <- "Sequence match"
+            if (verbose) cat(paste("  Found", nrow(seq_matches), "sequence matches\n"))
+          } else {
+            if (verbose) cat("  No sequence matches above threshold\n")
+          }
+        }
+      }
+    }
+
+    # 5. Find complete matches (gene + position + sequence)
+    complete_matches <- data.frame()
+
+    if (nrow(gene_matches) > 0 && nrow(pos_matches) > 0 && nrow(seq_matches) > 0) {
+      # Get the fusion IDs that match by gene
+      gene_match_ids <- gene_matches$fuse_contig
+
+      # Get the fusion IDs that match by position
+      pos_match_ids <- pos_matches$fuse_contig
+
+      # Get the fusion IDs that match by sequence
+      seq_match_ids <- seq_matches$fuse_contig
+
+      # Find the intersection of all three sets
+      complete_match_ids <- intersect(
+        intersect(gene_match_ids, pos_match_ids),
+        seq_match_ids
+      )
+
+      if (length(complete_match_ids) > 0) {
+        # Extract complete matches from the database
+        complete_matches <- db_fusions %>%
+          filter(fuse_contig %in% complete_match_ids)
+
+        # Add the match type
+        complete_matches$match_type <- "Complete match (gene+position+sequence)"
+
+        # Add sequence similarity scores
+        complete_matches <- left_join(
+          complete_matches,
+          seq_matches %>% select(fuse_contig, sequence_similarity),
+          by = "fuse_contig"
+        )
+
+        if (verbose) cat(paste("  Found", nrow(complete_matches), "complete matches\n"))
+      } else {
+        if (verbose) cat("  No matches meeting all three criteria\n")
+      }
+    }
+
+    # 6. Assign more specific match types for matches meeting multiple criteria
+
+    # Gene + Sequence matches
+    if (nrow(gene_matches) > 0 && nrow(seq_matches) > 0) {
+      gene_seq_ids <- intersect(gene_matches$fuse_contig, seq_matches$fuse_contig)
+
+      # Update match type for gene+sequence matches (excluding complete matches)
+      gene_seq_ids <- setdiff(gene_seq_ids, if (nrow(complete_matches) > 0) complete_matches$fuse_contig else character(0))
+
+      if (length(gene_seq_ids) > 0) {
+        gene_seq_matches <- db_fusions %>%
+          filter(fuse_contig %in% gene_seq_ids)
+
+        gene_seq_matches$match_type <- "Gene + Sequence match"
+
+        # Add sequence similarity scores
+        gene_seq_matches <- left_join(
+          gene_seq_matches,
+          seq_matches %>% select(fuse_contig, sequence_similarity),
+          by = "fuse_contig"
+        )
+
+        # Add to complete_matches data frame
+        complete_matches <- bind_rows(complete_matches, gene_seq_matches)
+      }
+    }
+
+    # Position + Sequence matches
+    if (nrow(pos_matches) > 0 && nrow(seq_matches) > 0) {
+      pos_seq_ids <- intersect(pos_matches$fuse_contig, seq_matches$fuse_contig)
+
+      # Update match type for position+sequence matches (excluding complete and gene+sequence matches)
+      pos_seq_ids <- setdiff(pos_seq_ids, if (nrow(complete_matches) > 0) complete_matches$fuse_contig else character(0))
+
+      if (length(pos_seq_ids) > 0) {
+        pos_seq_matches <- db_fusions %>%
+          filter(fuse_contig %in% pos_seq_ids)
+
+        pos_seq_matches$match_type <- "Position + Sequence match"
+
+        # Add sequence similarity scores
+        pos_seq_matches <- left_join(
+          pos_seq_matches,
+          seq_matches %>% select(fuse_contig, sequence_similarity),
+          by = "fuse_contig"
+        )
+
+        # Add to complete_matches data frame
+        complete_matches <- bind_rows(complete_matches, pos_seq_matches)
+      }
+    }
+
+    # Combine all matches
+    all_matches <- bind_rows(
+      # Prioritize complete matches
+      if (nrow(complete_matches) > 0) complete_matches else NULL,
+
+      # Single-criteria matches
+      if (nrow(gene_matches) > 0) {
+        # Exclude those that are already included in complete_matches
+        exclude_ids <- if (nrow(complete_matches) > 0) complete_matches$fuse_contig else character(0)
+        gene_matches %>% filter(!fuse_contig %in% exclude_ids)
+      } else NULL,
+
+      if (nrow(pos_matches) > 0) {
+        # Exclude those that are already included in complete_matches
+        exclude_ids <- if (nrow(complete_matches) > 0) complete_matches$fuse_contig else character(0)
+        pos_matches %>% filter(!fuse_contig %in% exclude_ids)
+      } else NULL,
+
+      if (nrow(seq_matches) > 0) {
+        # Exclude those that are already included in complete_matches
+        exclude_ids <- if (nrow(complete_matches) > 0) complete_matches$fuse_contig else character(0)
+        seq_matches %>% filter(!fuse_contig %in% exclude_ids)
+      } else NULL
+    )
+
+    if (nrow(all_matches) > 0) {
+      # Add sequenced fusion info to matches
+      all_matches$seq_fusion_id <- i
+      all_matches$seq_gene1 <- seq_fusion$bp1_gene
+      all_matches$seq_gene2 <- seq_fusion$bp2_gene
+      all_matches$seq_chr1 <- seq_fusion$chr1
+      all_matches$seq_chr2 <- seq_fusion$chr2
+      all_matches$seq_pos1 <- seq_fusion$start1
+      all_matches$seq_pos2 <- seq_fusion$start2
+
+      # Add to overall matches
+      matches <- bind_rows(matches, all_matches)
+    }
+  }
+
+  # Sort matches by type (complete matches first)
+  match_priority <- c(
+    "Complete match (gene+position+sequence)" = 1,
+    "Gene + Sequence match" = 2,
+    "Position + Sequence match" = 3,
+    "Exact gene match" = 4,
+    "Position match" = 5,
+    "Sequence match" = 6
+  )
+
+  # Add a priority field and sort by it
+  matches <- matches %>%
+    mutate(match_priority = match_priority[match_type]) %>%
+    arrange(match_priority, desc(sequence_similarity)) %>%
+    select(-match_priority)  # Remove priority column after sorting
+
+  # Generate summary
+  if (verbose) {
+    cat(paste("Found", nrow(matches), "potential matches\n"))
+
+    if (nrow(matches) > 0) {
+      match_summary <- matches %>%
+        group_by(match_type) %>%
+        summarise(count = n())
+
+      cat("\nMatches by type:\n")
+      print(match_summary)
+    }
+  }
+
+  # Save results if output file is provided
+  if (!is.null(output_file) && nrow(matches) > 0) {
+    write.csv(matches, output_file, row.names = FALSE)
+    if (verbose) cat(paste("Results saved to", output_file, "\n"))
+  }
+
+  return(matches)
+}
+
+# Add a helper function for calculating sequence similarity
+# This function was previously defined
+calculate_sequence_similarity <- function(seq1, seq2, type = "global", score_only = TRUE) {
+  # Check inputs
+  if (is.null(seq1) || is.null(seq2) || nchar(seq1) == 0 || nchar(seq2) == 0) {
+    warning("One of the sequences is empty or NULL")
+    return(NA)
+  }
+
+  # Clean sequences - remove invalid characters
+  seq1 <- gsub("[^ACGTN]", "", toupper(seq1))
+  seq2 <- gsub("[^ACGTN]", "", toupper(seq2))
+
+  if (nchar(seq1) == 0 || nchar(seq2) == 0) {
+    warning("After cleaning, one of the sequences is empty")
+    return(NA)
+  }
+
+  # For very long sequences, use a simpler approach
+  if (nchar(seq1) > 1000 || nchar(seq2) > 1000) {
+    # Use string similarity metrics instead of full alignment
+    # Get substrings for comparison (first 100 characters)
+    sub1 <- substr(seq1, 1, min(100, nchar(seq1)))
+    sub2 <- substr(seq2, 1, min(100, nchar(seq2)))
+
+    # Calculate edit distance
+    ed <- adist(sub1, sub2)[1]
+    max_len <- max(nchar(sub1), nchar(sub2))
+    similarity <- 100 * (1 - ed / max_len)
+    return(similarity)
+  }
+
+  # Try to load Biostrings without error
+  if (!requireNamespace("Biostrings", quietly = TRUE)) {
+    warning("Biostrings package not available, using simpler method")
+    # Use string distance as fallback
+    ed <- adist(seq1, seq2)[1]
+    max_len <- max(nchar(seq1), nchar(seq2))
+    similarity <- 100 * (1 - ed / max_len)
+    return(similarity)
+  }
+
+  # Convert to DNAString objects
+  seq1_dna <- try(Biostrings::DNAString(seq1), silent = TRUE)
+  seq2_dna <- try(Biostrings::DNAString(seq2), silent = TRUE)
+
+  if (inherits(seq1_dna, "try-error") || inherits(seq2_dna, "try-error")) {
+    warning("Invalid DNA sequence detected, using simpler method")
+    # Use string distance as fallback
+    ed <- adist(seq1, seq2)[1]
+    max_len <- max(nchar(seq1), nchar(seq2))
+    similarity <- 100 * (1 - ed / max_len)
+    return(similarity)
+  }
+
+  # Perform pairwise alignment
+  alignment <- try(
+    Biostrings::pairwiseAlignment(seq1_dna, seq2_dna, type = type),
+    silent = TRUE
+  )
+
+  if (inherits(alignment, "try-error")) {
+    warning("Alignment failed, using simpler method")
+    # Use string distance as fallback
+    ed <- adist(seq1, seq2)[1]
+    max_len <- max(nchar(seq1), nchar(seq2))
+    similarity <- 100 * (1 - ed / max_len)
+    return(similarity)
+  }
+
+  # Return score or full alignment
+  if (score_only) {
+    return(Biostrings::pid(alignment, type = "PID1"))  # Percent identity
+  } else {
+    return(alignment)
+  }
+}
+
+# Usage example:
+# match <- match_neosplice_fusions_complete(
+#   seq_input = fusions_S1,
+#   db_file = file.path("inst", "extdata", "fusions", "NeoSplice_hg38_inframe_fusion.txt.gz"),
+#   breakpoint_tolerance = 2,
+#   sequence_similarity_threshold = 60
+# )
+
+get_neosplice_db <- function(db_file = NULL, force_reload = FALSE) {
+  db_key <- "neosplice_db"
+
+  # Use custom database if provided
+  if (!is.null(db_file)) {
+    if (!file.exists(db_file)) {
+      stop("Database file not found: ", db_file)
+    }
+    db_key <- paste0("neosplice_db_", digest::digest(db_file))
+  } else {
+    # Use default database from package
+    db_file <- system.file("extdata", "fusions", "NeoSplice_hg38_inframe_fusion.txt.gz",
+                           package = "yourpackage")  # Replace with your package name
+  }
+
+  # Check if already cached
+  if (!force_reload && exists(db_key, envir = .fusion_pkg_env)) {
+    return(get(db_key, envir = .fusion_pkg_env))
+  }
+
+  # Load the database
+  message("Loading NeoSplice database...")
+  db <- parse_neosplice_database(db_file)
+
+  # Cache it
+  assign(db_key, db, envir = .fusion_pkg_env)
+
+  return(db)
+}

@@ -9,37 +9,68 @@ data_K562 <- read_json_file("/Volumes/furlan_s/sfurlan/pacbiorerun/pbWGS/K562/20
 data_4N <- read_json_file("/Volumes/furlan_s/sfurlan/pacbiorerun/pbWGS/SNF_4N/20250211_181001_humanwgs_singleton/outputs.json")
 data_4M <- read_json_file("/Volumes/furlan_s/sfurlan/pacbiorerun/pbWGS/SNF_4CM/20250211_180912_humanwgs_singleton/outputs.json")
 
-gtffile = "/Users/sfurlan/Library/CloudStorage/OneDrive-FredHutchinsonCancerResearchCenter/computation/refs/GTFs/gencode.v47.chr_patch_hapl_scaff.annotation.gtf"
+#gtffile = "/Users/sfurlan/Library/CloudStorage/OneDrive-FredHutchinsonCancerResearchCenter/computation/refs/GTFs/gencode.v47.chr_patch_hapl_scaff.annotation.gtf"
 #gtffile = "/Users/sfurlan/OneDrive - Fred Hutchinson Cancer Center/computation/refs/GTFs/gencode.v47.chr_patch_hapl_scaff.annotation.gtf"
+gtffile = "/Users/sfurlan/OneDrive - Fred Hutchinson Cancer Center/computation/refs/GTFs/BCR_ABL1_genes.gtf"
 
-fusions_S1 <- get_fusions_from_vcf(data_S1$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 2, plot = F, annotate = T, gtf_file = gtffile)
-fusions_S18 <- get_fusions_from_vcf(data_S18$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 2, plot = F, annotate = T, gtf_file = gtffile)
-fusions_S42 <- get_fusions_from_vcf(data_S42$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 2, plot = F, annotate = T, gtf_file = gtffile)
-fusions_SAdd <- get_fusions_from_vcf(data_SAdd$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 2, plot = F, annotate = T, gtf_file = gtffile)
-fusions_WSU <- get_fusions_from_vcf(data_WSU$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 2, plot = F, annotate = T, gtf_file = gtffile)
-fusions_m07 <- get_fusions_from_vcf(data_m07$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 2, plot = F, annotate = T, gtf_file = gtffile)
-fusions_K562 <- get_fusions_from_vcf(data_K562$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 2, plot = F, annotate = T, gtf_file = gtffile)
-fusions_4N <- get_fusions_from_vcf(data_4N$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 2, plot = F, annotate = T, gtf_file = gtffile)
-fusions_4M <- get_fusions_from_vcf(data_4M$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 2, plot = F, annotate = T, gtf_file = gtffile)
+
+fusions_S1 <- get_fusions_from_vcf(data_S1$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 10, plot = F, annotate = T, gtf_file = gtffile)
+fusions_S18 <- get_fusions_from_vcf(data_S18$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 10, plot = F, annotate = T, gtf_file = gtffile)
+fusions_S42 <- get_fusions_from_vcf(data_S42$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 10, plot = F, annotate = T, gtf_file = gtffile)
+fusions_SAdd <- get_fusions_from_vcf(data_SAdd$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 10, plot = F, annotate = T, gtf_file = gtffile)
+fusions_WSU <- get_fusions_from_vcf(data_WSU$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 10, plot = F, annotate = T, gtf_file = gtffile)
+fusions_m07 <- get_fusions_from_vcf(data_m07$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 10, plot = F, annotate = T, gtf_file = gtffile)
+fusions_K562 <- get_fusions_from_vcf(data_K562$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 10, plot = F, annotate = T, gtf_file = gtffile)
+fusions_4N <- get_fusions_from_vcf(data_4N$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 10, plot = F, annotate = T, gtf_file = gtffile)
+fusions_4M <- get_fusions_from_vcf(data_4M$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 10, plot = F, annotate = T, gtf_file = gtffile)
+fusions_WSU1 <- get_fusions_from_vcf(data_WSU$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 1, plot = T, annotate = T, gtf_file = gtffile, filter = "")
+
+library(GenomicAlignments)
+undebug(draw_fusions)
+draw_fusions("fusions.tsv", exonsFile = gtffile, alignmentsFile = "")
+
+
+exons <- scan(gtffile,
+              what=list(contig="", src="", type="", start=0, end=0, score="", strand="", frame="", attributes=""),
+              sep="\t", comment.char="#", quote='"', multi.line=FALSE)
+
+
+exons[grepl("ENST00000305877", exons$attributes),]
+exons[grepl("ENSG00000097007", exons$attributes),]
+exons[grepl("ENST00000372348", exons$attributes),]
+
+run_fusion_examples()
+
+gt::gt(fusions_WSU1[10,c(1:4,7,11:20, 23)]) |> tab_options(table.font.size=10)
+
 
 flist <- list(fusions_S1, fusions_S18, fusions_S42, fusions_SAdd, fusions_WSU, fusions_m07, fusions_K562, fusions_4N, fusions_4M)
 
 
-matches <- lapply(flist, function(fusion) {match_neosplice_fusions(
-  seq_input = fusion,
-  db_file = file.path("inst", "extdata", "fusions", "NeoSplice_hg38_inframe_fusion.txt.gz"), breakpoint_tolerance = 200000
+matches <- lapply(flist, function(fusion) {match_neosplice_fusions_with_sequence(
+  seq_input = fusion, sequence_similarity_threshold = 50,
+  db_file = file.path("inst", "extdata", "fusions", "NeoSplice_hg38_inframe_fusion.txt.gz"), breakpoint_tolerance = 100
 )})
 
-fusions_S1
+names(matches)<-strsplit("S1 S18 S42 SAdd WSU m07 K562 4N 4M", " ")[[1]]
 
-undebug(match_neosplice_fusions_with_sequence)
-match<-match_neosplice_fusions_with_sequence(
-  seq_input = fusions_S1, sequence_similarity_threshold = 10,
-  db_file = file.path("inst", "extdata", "fusions", "NeoSplice_hg38_inframe_fusion.txt.gz"), breakpoint_tolerance = 2
-)
+n<-7
+matches[[n]][which(matches[[n]]$sequence_similarity> 50),]
+m<-matches[[n]]
+m$match_type
 
-match[match$sequence_similarity > 53 & !is.na(match$sequence_similarity),]
 
+
+library(msa)
+
+mySequences <- DNAStringSet(x=c(fusions_K562[34,]$predicted_fusion_sequence, matches[[7]][which.max(matches[[7]]$sequence_similarity),]$fuse_contig))
+myFirstAlignment <- msa(mySequences)
+msaPrettyPrint(myFirstAlignment)
+
+
+
+
+get_fusion_sequences(matches[[n]][which(matches[[n]]$sequence_similarity> 50),])
 fudb<-data.table::fread(file.path("inst", "extdata", "fusions", "NeoSplice_hg38_inframe_fusion.txt.gz"))
 
 

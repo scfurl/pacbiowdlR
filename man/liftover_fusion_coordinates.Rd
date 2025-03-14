@@ -2,8 +2,15 @@
 % Please edit documentation in R/liftover.R
 \name{liftover_fusion_coordinates}
 \alias{liftover_fusion_coordinates}
-\title{Lift over fusion gene coordinates from hg19 to hg38}
+\title{Lift over fusion gene coordinates from hg19 to hg38 (multi-file version)}
 \usage{
+liftover_fusion_coordinates(
+  input_file,
+  output_dir = ".",
+  chain_file = NULL,
+  column_names = NULL
+)
+
 liftover_fusion_coordinates(
   input_file,
   output_dir = ".",
@@ -12,8 +19,8 @@ liftover_fusion_coordinates(
 )
 }
 \arguments{
-\item{input_file}{Character string specifying the path to the input file. File should be
-tab-delimited in ChimerDB4 format.}
+\item{input_file}{Character vector specifying the path(s) to input file(s).
+Each file should be tab-delimited in ChimerDB4 format (or similar).}
 
 \item{output_dir}{Character string specifying the directory where output files will be written.
 Defaults to the current working directory.}
@@ -21,23 +28,40 @@ Defaults to the current working directory.}
 \item{chain_file}{Character string specifying the path to the chain file. If NULL (default),
 the function will download the chain file from UCSC.}
 
-\item{column_names}{Character vector of column names for the input file. If NULL (default),
+\item{column_names}{Character vector of column names for the input file(s). If NULL (default),
 the function will use the default ChimerDB4 column names.}
 }
 \value{
 A list containing three data frames:
 \describe{
-  \item{combined}{Data frame with both hg19 and hg38 coordinates}
+  \item{combined}{Data frame with both hg19 and hg38 coordinates (all files combined)}
+  \item{hg38_only}{Data frame with only hg38 coordinates for successful liftovers}
+  \item{failed}{Data frame with records that failed to lift over}
+}
+
+A list containing three data frames:
+\describe{
+  \item{combined}{Data frame with both hg19 and hg38 coordinates (all files combined)}
   \item{hg38_only}{Data frame with only hg38 coordinates for successful liftovers}
   \item{failed}{Data frame with records that failed to lift over}
 }
 }
 \description{
-This function takes a fusion gene dataset in the ChimerDB4 format with hg19 coordinates
-and lifts over the coordinates to hg38 using the UCSC chain file.
+This function accepts *multiple* input files (a character vector) in ChimerDB4-like format,
+combines them, and lifts over the coordinates from hg19 to hg38 using the UCSC chain file.
+
+This function accepts *multiple* input files (a character vector) in ChimerDB4-like format,
+combines them, and lifts over the coordinates from hg19 to hg38 using the UCSC chain file.
 }
 \details{
-The function creates three output files in the specified directory:
+The function creates three output files in the specified directory (for *all* files combined):
+\describe{
+  \item{chimer_data_hg19_and_hg38.txt}{Contains both hg19 and hg38 coordinates}
+  \item{chimer_data_hg38.txt}{Contains only hg38 coordinates for successful liftovers}
+  \item{failed_liftover.txt}{Contains records that failed to lift over}
+}
+
+The function creates three output files in the specified directory (for *all* files combined):
 \describe{
   \item{chimer_data_hg19_and_hg38.txt}{Contains both hg19 and hg38 coordinates}
   \item{chimer_data_hg38.txt}{Contains only hg38 coordinates for successful liftovers}
@@ -46,22 +70,25 @@ The function creates three output files in the specified directory:
 }
 \examples{
 \dontrun{
-# Basic usage with default parameters
-liftover_fusion_coordinates("path/to/chimerdb4_file.txt")
-
-# Specify custom output directory and column names
-result <- liftover_fusion_coordinates(
-  "path/to/chimerdb4_file.txt",
-  output_dir = "path/to/output",
-  column_names = c("DB", "Cancer", "Sample", "Gene1", "Chr1", "Pos1", "Strand1",
-                   "Gene2", "Chr2", "Pos2", "Strand2")
-)
-
-# Use a local chain file
+# Multiple files
 liftover_fusion_coordinates(
-  "path/to/chimerdb4_file.txt",
-  chain_file = "path/to/hg19ToHg38.over.chain"
+  input_file = c("chimerdb4_file1.txt", "chimerdb4_file2.txt"),
+  output_dir = "path/to/output"
 )
+
+# Single file still works (same interface)
+liftover_fusion_coordinates("chimerdb4_file.txt")
+}
+
+\dontrun{
+# Multiple files
+liftover_fusion_coordinates(
+  input_file = c("chimerdb4_file1.txt", "chimerdb4_file2.txt"),
+  output_dir = "path/to/output"
+)
+
+# Single file still works (same interface)
+liftover_fusion_coordinates("chimerdb4_file.txt")
 }
 
 }
