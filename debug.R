@@ -9,9 +9,11 @@ data_K562 <- read_json_file("/Volumes/furlan_s/sfurlan/pacbiorerun/pbWGS/K562/20
 data_4N <- read_json_file("/Volumes/furlan_s/sfurlan/pacbiorerun/pbWGS/SNF_4N/20250211_181001_humanwgs_singleton/outputs.json")
 data_4M <- read_json_file("/Volumes/furlan_s/sfurlan/pacbiorerun/pbWGS/SNF_4CM/20250211_180912_humanwgs_singleton/outputs.json")
 
-#gtffile = "/Users/sfurlan/Library/CloudStorage/OneDrive-FredHutchinsonCancerResearchCenter/computation/refs/GTFs/gencode.v47.chr_patch_hapl_scaff.annotation.gtf"
+gtffile = "/Users/sfurlan/Library/CloudStorage/OneDrive-FredHutchinsonCancerResearchCenter/computation/refs/GTFs/gencode.v47.chr_patch_hapl_scaff.annotation.gtf"
+sgtffile = "/Users/sfurlan/Library/CloudStorage/OneDrive-FredHutchinsonCancerResearchCenter/computation/refs/GTFs/BCR_ABL1_genes.gtf"
+
 #gtffile = "/Users/sfurlan/OneDrive - Fred Hutchinson Cancer Center/computation/refs/GTFs/gencode.v47.chr_patch_hapl_scaff.annotation.gtf"
-gtffile = "/Users/sfurlan/OneDrive - Fred Hutchinson Cancer Center/computation/refs/GTFs/BCR_ABL1_genes.gtf"
+#sgtffile = "/Users/sfurlan/OneDrive - Fred Hutchinson Cancer Center/computation/refs/GTFs/BCR_ABL1_genes.gtf"
 
 
 fusions_S1 <- get_fusions_from_vcf(data_S1$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 10, plot = F, annotate = T, gtf_file = gtffile)
@@ -25,10 +27,16 @@ fusions_4N <- get_fusions_from_vcf(data_4N$humanwgs_singleton.tertiary_sv_filter
 fusions_4M <- get_fusions_from_vcf(data_4M$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 10, plot = F, annotate = T, gtf_file = gtffile)
 fusions_WSU1 <- get_fusions_from_vcf(data_WSU$humanwgs_singleton.tertiary_sv_filtered_vcf, thresh = 1, plot = T, annotate = T, gtf_file = gtffile, filter = "")
 
-library(GenomicAlignments)
-undebug(draw_fusions)
-draw_fusions("fusions.tsv", exonsFile = gtffile, alignmentsFile = "")
+debug(plot_dna_fusions)
+plot_dna_fusions(fusions_S1[1,])
 
+library(GenomicAlignments)
+debug(pacbiowdlR:::drawCircos)
+draw_fusions("fusions.tsv", exonsFile = sgtffile, alignmentsFile = "")
+cb <- read.table("cytoBand.txt", sep = "\t")
+colnames(cb) <- c("contig",	"start",	"end",	"name",	"giemsa")
+cb$contig<- gsub("^chr", "", cb$contig)
+write.table(cb, "cytobands.tsv", sep = "\t", col.names = T, quote = F, row.names = F  )
 
 exons <- scan(gtffile,
               what=list(contig="", src="", type="", start=0, end=0, score="", strand="", frame="", attributes=""),
