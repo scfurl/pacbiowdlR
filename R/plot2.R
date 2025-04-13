@@ -16,7 +16,7 @@ annotateCoverageWithGenes <- function(coverage_df,
   )
 
   # Extract gene ranges from TxDb
-  gene_ranges <- genes(txdb)
+  gene_ranges <- genes(txdb, single.strand.genes.only=FALSE)
 
   # Find overlaps
   ov <- findOverlaps(coverage_gr, gene_ranges)
@@ -27,13 +27,13 @@ annotateCoverageWithGenes <- function(coverage_df,
 
   if (!return_entrez) {
     # Convert Entrez IDs to gene SYMBOLs
-    coverage_df$gene_symbol <- mapIds(
+    suppressMessages({coverage_df$gene_symbol <- mapIds(
       org.Hs.eg.db,
       keys      = gsub("^GeneID:", "", coverage_df$gene_id), # remove "GeneID:" prefix if present
       column    = "SYMBOL",
       keytype   = "ENTREZID",
       multiVals = "first"
-    )
+    )})
   } else {
     coverage_df$gene_symbol <- coverage_df$gene_id
   }
@@ -107,6 +107,7 @@ generateCNAPlotFromRegions2 <- function(depth_bigwig_file, variant_file, thresho
   # Compute the delta (difference from the mean coverage).
   mean_coverage <- mean(coverage_data$score)
   coverage_data$delta <- coverage_data$score - mean_coverage
+
 
   # Read the VCF file and adjust column names.
   vcf <- fread(variant_file, skip = "#CHROM")

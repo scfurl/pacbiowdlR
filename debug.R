@@ -1,4 +1,5 @@
 roxygen2::roxygenize()
+library(TxDb.Hsapiens.UCSC.hg38.knownGene)
 data_S1 <- read_json_file("/Volumes/furlan_s/sfurlan/250302_leuklong/pbWGS/LL1_S1/20250302_232026_humanwgs_singleton/outputs.json")
 data_S18 <- read_json_file("/Volumes/furlan_s/sfurlan/250302_leuklong/pbWGS/LL2_S18/20250302_232206_humanwgs_singleton/outputs.json")
 data_S42 <- read_json_file("/Volumes/furlan_s/sfurlan/250302_leuklong/pbWGS/LL3_S42/20250303_062244_humanwgs_singleton/outputs.json")
@@ -9,8 +10,40 @@ data_K562 <- read_json_file("/Volumes/furlan_s/sfurlan/pacbiorerun/pbWGS/K562/20
 data_4N <- read_json_file("/Volumes/furlan_s/sfurlan/pacbiorerun/pbWGS/SNF_4N/20250211_181001_humanwgs_singleton/outputs.json")
 data_4M <- read_json_file("/Volumes/furlan_s/sfurlan/pacbiorerun/pbWGS/SNF_4CM/20250211_180912_humanwgs_singleton/outputs.json")
 
-gtffile = "/Users/sfurlan/Library/CloudStorage/OneDrive-FredHutchinsonCancerResearchCenter/computation/refs/GTFs/gencode.v47.chr_patch_hapl_scaff.annotation.gtf"
-sgtffile = "/Users/sfurlan/Library/CloudStorage/OneDrive-FredHutchinsonCancerResearchCenter/computation/refs/GTFs/BCR_ABL1_genes.gtf"
+chrom_palette <- c(
+  "#FF0000", "#FF9900", "#FFCC00", "#00FF00", "#6699FF", "#CC33FF",
+  "#999912", "#999999", "#FF00CC", "#CC0000", "#FFCCCC", "#FFFF00",
+  "#CCFF00", "#358000", "#0000CC", "#99CCFF", "#00FFFF", "#ECFFFF",
+  "#9900CC", "#CC99FF", "#996600", "#666600", "#666666", "#CCCCCC",
+  "#79CC3B", "#E0EC3B", "#CCC99F"
+)
+chr_colors <- setNames(chrom_palette, paste0("chr", c(1:22, "X")))
+
+
+CNAPlot(
+  depth_bigwig_file  =   data_S1$humanwgs_singleton.cnv_depth_bw,
+  variant_file       =   data_S1$humanwgs_singleton.cnv_vcf,
+  txdb               = TxDb.Hsapiens.UCSC.hg38.knownGene,
+  downsample         = 0.1,  method = "fit",
+  samplename         = "MySample", max_value = 3.5, min_value = -3.5, colors = chrom_palette
+)
+
+debug(CNAPlot_Highlight)
+CNAPlot_Highlight(
+  depth_bigwig_file  =   data_S1$humanwgs_singleton.cnv_depth_bw,
+  variant_file       =   data_S1$humanwgs_singleton.cnv_vcf,
+  txdb               = TxDb.Hsapiens.UCSC.hg38.knownGene, chr_filter = "chr9",
+  downsample         = 1,   highlight_genes = c("CDKN2A", "MLLT3"), gene_delta_threshold = 1,
+  samplename         = "MySample", max_value = 3.5, min_value = -3.5, colors = chrom_palette, showCNAbands = T
+)
+
+
+
+
+
+
+gtffile = "/Users/sfurlan/Library/CloudStorage/OneDrive-FredHutchinsonCancerCenter/computation/refs/GTFs/gencode.v47.chr_patch_hapl_scaff.annotation.gtf"
+sgtffile = "/Users/sfurlan/Library/CloudStorage/OneDrive-FredHutchinsonCancerCenter/computation/refs/GTFs/BCR_ABL1_genes.gtf"
 
 #gtffile = "/Users/sfurlan/OneDrive - Fred Hutchinson Cancer Center/computation/refs/GTFs/gencode.v47.chr_patch_hapl_scaff.annotation.gtf"
 #sgtffile = "/Users/sfurlan/OneDrive - Fred Hutchinson Cancer Center/computation/refs/GTFs/BCR_ABL1_genes.gtf"
@@ -388,7 +421,7 @@ library(TxDb.Hsapiens.UCSC.hg38.knownGene)
 
 chrom_palette <- c(
   "#FF0000", "#FF9900", "#FFCC00", "#00FF00", "#6699FF", "#CC33FF",
-  s"#999912", "#999999", "#FF00CC", "#CC0000", "#FFCCCC", "#FFFF00",
+  "#999912", "#999999", "#FF00CC", "#CC0000", "#FFCCCC", "#FFFF00",
   "#CCFF00", "#358000", "#0000CC", "#99CCFF", "#00FFFF", "#ECFFFF",
   "#9900CC", "#CC99FF", "#996600", "#666600", "#666666", "#CCCCCC",
   "#79CC3B", "#E0EC3B", "#CCC99F"
@@ -397,10 +430,10 @@ chr_colors <- setNames(chrom_palette, paste0("chr", c(1:22, "X")))
 
 
 generateCNAPlotDiscoverGenes2(
-  depth_bigwig_file  =   data_S1$humanwgs_singleton.cnv_depth_bw,
-  variant_file       =   data_S1$humanwgs_singleton.cnv_vcf,
+  depth_bigwig_file  =   data_S18$humanwgs_singleton.cnv_depth_bw,
+  variant_file       =   data_S18$humanwgs_singleton.cnv_vcf,
   txdb               = TxDb.Hsapiens.UCSC.hg38.knownGene,
-  downsample         = 0.1,
+  downsample         = 0.4,
   samplename         = "MySample", gene_delta_threshold = 500,
   return_data        = F, colors = chrom_palette
 )
