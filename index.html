@@ -89,59 +89,33 @@
       </header><div class="row">
   <div class="contents col-md-9">
 
-<p>Below is an example of an <strong>index.md</strong> file for your pkgdown site. You can customize the badges, image links, and text as needed. Save this file in the root of your package (usually in the “docs” folder or next to your pkgdown configuration) so that pkgdown uses it as the home page.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="co">&lt;!-- badges: start --&gt;</span></span>
-<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="co">[</span><span class="al">![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/pacbiowdlR?color=blue)</span><span class="co">](https://cran.r-project.org/web/packages/pacbiowdlR)</span></span>
-<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="co">[</span><span class="al">![Downloads](https://cranlogs.r-pkg.org/badges/pacbiowdlR?color=blue)</span><span class="co">](https://cran.rstudio.com/package=pacbiowdlR)</span></span>
-<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="co">[</span><span class="al">![R-CMD-check](https://github.com/yourusername/pacbiowdlR/workflows/R-CMD-check/badge.svg)</span><span class="co">](https://github.com/yourusername/pacbiowdlR/actions)</span></span>
-<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="co">[</span><span class="al">![codecov](https://codecov.io/gh/yourusername/pacbiowdlR/branch/master/graph/badge.svg)</span><span class="co">](https://codecov.io/gh/yourusername/pacbiowdlR)</span></span>
-<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="co">&lt;!-- badges: end --&gt;</span></span>
-<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a></span>
-<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">br</span><span class="dt">&gt;</span></span>
-<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a></span>
-<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">div</span><span class="ot"> style</span><span class="op">=</span><span class="st">"text-align:left"</span><span class="dt">&gt;</span></span>
-<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a>  <span class="dt">&lt;</span><span class="kw">span</span><span class="dt">&gt;</span></span>
-<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a>    <span class="dt">&lt;</span><span class="kw">a</span><span class="ot"> href</span><span class="op">=</span><span class="st">"https://github.com/yourusername/pacbiowdlR"</span><span class="dt">&gt;</span></span>
-<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a>      <span class="dt">&lt;</span><span class="kw">img</span><span class="ot"> src</span><span class="op">=</span><span class="st">"https://raw.githubusercontent.com/yourusername/pacbiowdlR/main/inst/figures/pacbiowdlR_logo.png"</span><span class="ot"> width</span><span class="op">=</span><span class="st">"100"</span><span class="ot"> alt</span><span class="op">=</span><span class="st">"pacbiowdlR Logo"</span><span class="dt">/&gt;</span></span>
-<span id="cb1-14"><a href="#cb1-14" tabindex="-1"></a>    <span class="dt">&lt;/</span><span class="kw">a</span><span class="dt">&gt;</span></span>
-<span id="cb1-15"><a href="#cb1-15" tabindex="-1"></a>    <span class="dt">&lt;</span><span class="kw">h2</span><span class="dt">&gt;&lt;</span><span class="kw">strong</span><span class="dt">&gt;</span>pacbiowdlR<span class="dt">&lt;/</span><span class="kw">strong</span><span class="dt">&gt;&lt;/</span><span class="kw">h2</span><span class="dt">&gt;</span></span>
-<span id="cb1-16"><a href="#cb1-16" tabindex="-1"></a>    <span class="dt">&lt;</span><span class="kw">h4</span><span class="dt">&gt;</span>Plotting Copy Number Alterations from PacBio WDL Data<span class="dt">&lt;/</span><span class="kw">h4</span><span class="dt">&gt;</span></span>
-<span id="cb1-17"><a href="#cb1-17" tabindex="-1"></a>  <span class="dt">&lt;/</span><span class="kw">span</span><span class="dt">&gt;</span></span>
-<span id="cb1-18"><a href="#cb1-18" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">div</span><span class="dt">&gt;</span></span>
-<span id="cb1-19"><a href="#cb1-19" tabindex="-1"></a></span>
-<span id="cb1-20"><a href="#cb1-20" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">br</span><span class="dt">&gt;</span></span>
-<span id="cb1-21"><a href="#cb1-21" tabindex="-1"></a></span>
-<span id="cb1-22"><a href="#cb1-22" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">a</span><span class="ot"> href</span><span class="op">=</span><span class="st">"man/figures/CNAPlot_fit.png"</span><span class="dt">&gt;</span></span>
-<span id="cb1-23"><a href="#cb1-23" tabindex="-1"></a>  <span class="dt">&lt;</span><span class="kw">img</span><span class="ot"> src</span><span class="op">=</span><span class="st">"man/figures/CNAPlot_fit.png"</span><span class="ot"> style</span><span class="op">=</span><span class="st">"width: 15%;"</span><span class="dt">/&gt;</span></span>
-<span id="cb1-24"><a href="#cb1-24" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">a</span><span class="dt">&gt;</span></span>
-<span id="cb1-25"><a href="#cb1-25" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">a</span><span class="ot"> href</span><span class="op">=</span><span class="st">"man/figures/CNAPlot_delta.png"</span><span class="dt">&gt;</span></span>
-<span id="cb1-26"><a href="#cb1-26" tabindex="-1"></a>  <span class="dt">&lt;</span><span class="kw">img</span><span class="ot"> src</span><span class="op">=</span><span class="st">"man/figures/CNAPlot_delta.png"</span><span class="ot"> style</span><span class="op">=</span><span class="st">"width: 15%;"</span><span class="dt">/&gt;</span></span>
-<span id="cb1-27"><a href="#cb1-27" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">a</span><span class="dt">&gt;</span></span>
-<span id="cb1-28"><a href="#cb1-28" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">a</span><span class="ot"> href</span><span class="op">=</span><span class="st">"man/figures/CNAPlot_loess.png"</span><span class="dt">&gt;</span></span>
-<span id="cb1-29"><a href="#cb1-29" tabindex="-1"></a>  <span class="dt">&lt;</span><span class="kw">img</span><span class="ot"> src</span><span class="op">=</span><span class="st">"man/figures/CNAPlot_loess.png"</span><span class="ot"> style</span><span class="op">=</span><span class="st">"width: 15%;"</span><span class="dt">/&gt;</span></span>
-<span id="cb1-30"><a href="#cb1-30" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">a</span><span class="dt">&gt;</span></span>
-<span id="cb1-31"><a href="#cb1-31" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">a</span><span class="ot"> href</span><span class="op">=</span><span class="st">"man/figures/CNAPlot_geneHighlight.png"</span><span class="dt">&gt;</span></span>
-<span id="cb1-32"><a href="#cb1-32" tabindex="-1"></a>  <span class="dt">&lt;</span><span class="kw">img</span><span class="ot"> src</span><span class="op">=</span><span class="st">"man/figures/CNAPlot_geneHighlight.png"</span><span class="ot"> style</span><span class="op">=</span><span class="st">"width: 15%;"</span><span class="dt">/&gt;</span></span>
-<span id="cb1-33"><a href="#cb1-33" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">a</span><span class="dt">&gt;</span></span>
-<span id="cb1-34"><a href="#cb1-34" tabindex="-1"></a></span>
-<span id="cb1-35"><a href="#cb1-35" tabindex="-1"></a>**pacbiowdlR** is an R package that offers a suite of functions for visualizing DNA copy number alterations (CNAs) from PacBio workflows. The plots, built with **ggplot2**, include options to calculate delta values using different methods (simple difference, LOESS log-ratio, or linear model–based log-ratio) and to annotate CNAs with gene information and cytogenetic features.</span>
-<span id="cb1-36"><a href="#cb1-36" tabindex="-1"></a></span>
-<span id="cb1-37"><a href="#cb1-37" tabindex="-1"></a>The package is designed to work seamlessly with output files from the pacbiowdlR pipeline (e.g., BigWig depth files and VCF variant call files). Its interactive and customizable plots support both quick diagnostic visualizations and in-depth exploratory data analysis.</span>
-<span id="cb1-38"><a href="#cb1-38" tabindex="-1"></a></span>
-<span id="cb1-39"><a href="#cb1-39" tabindex="-1"></a>---</span>
-<span id="cb1-40"><a href="#cb1-40" tabindex="-1"></a></span>
-<span id="cb1-41"><a href="#cb1-41" tabindex="-1"></a><span class="fu">## Getting Started</span></span>
-<span id="cb1-42"><a href="#cb1-42" tabindex="-1"></a></span>
-<span id="cb1-43"><a href="#cb1-43" tabindex="-1"></a>Install the latest release from **CRAN**:</span>
-<span id="cb1-44"><a href="#cb1-44" tabindex="-1"></a></span>
-<span id="cb1-45"><a href="#cb1-45" tabindex="-1"></a><span class="in">```r</span></span>
-<span id="cb1-46"><a href="#cb1-46" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">"pacbiowdlR"</span>)</span></code></pre></div>
-<p>Or install the development version from <strong>GitHub</strong>:</p>
+
+<p><br></p>
+<div style="text-align:left">
+<span> <a href="https://github.com/yourusername/pacbiowdlR" class="external-link"> <img src="https://raw.githubusercontent.com/yourusername/pacbiowdlR/main/inst/figures/pacbiowdlR_logo.png" width="100" alt="pacbiowdlR Logo"></a>
+<h2>
+<strong>pacbiowdlR</strong>
+</h2>
+<div class="sourceCode" id="cb1"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="sc">&lt;</span>h4<span class="sc">&gt;</span>Plotting Copy Number Alterations from PacBio WDL Data<span class="sc">&lt;</span><span class="er">/</span>h4<span class="sc">&gt;</span></span></code></pre></div>
+<p></p></span>
+</div>
+<p><br></p>
+<p><a href="man/figures/CNAPlot_fit.png"> <img src="reference/figures/CNAPlot_fit.png" style="width: 15%;"></a> <a href="man/figures/CNAPlot_delta.png"> <img src="reference/figures/CNAPlot_delta.png" style="width: 15%;"></a> <a href="man/figures/CNAPlot_loess.png"> <img src="reference/figures/CNAPlot_loess.png" style="width: 15%;"></a> <a href="man/figures/CNAPlot_geneHighlight.png"> <img src="reference/figures/CNAPlot_geneHighlight.png" style="width: 15%;"></a></p>
+<p><strong>pacbiowdlR</strong> is an R package that offers a suite of functions for visualizing DNA copy number alterations (CNAs) from PacBio workflows. The plots, built with <strong>ggplot2</strong>, include options to calculate delta values using different methods (simple difference, LOESS log-ratio, or linear model–based log-ratio) and to annotate CNAs with gene information and cytogenetic features.</p>
+<p>The package is designed to work seamlessly with output files from the pacbiowdlR pipeline (e.g., BigWig depth files and VCF variant call files). Its interactive and customizable plots support both quick diagnostic visualizations and in-depth exploratory data analysis.</p>
+<hr>
+<div class="section level2">
+<h2 id="getting-started">Getting Started<a class="anchor" aria-label="anchor" href="#getting-started"></a>
+</h2>
+<p>Install the latest release from <strong>CRAN</strong>:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"pacbiowdlR"</span><span class="op">)</span></span></code></pre></div>
+<p>Or install the development version from <strong>GitHub</strong>:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">require</a></span><span class="op">(</span><span class="st"><a href="https://devtools.r-lib.org/" class="external-link">"devtools"</a></span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"devtools"</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"yourusername/pacbiowdlR"</span><span class="op">)</span></span></code></pre></div>
 <p>Once installed, you can load the package and create a CNA plot using a single function call:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://scfurl.github.io/pacbiowdlR/">pacbiowdlR</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Example file paths (replace with your own)</span></span>
@@ -160,11 +134,12 @@
 <span>  min_value          <span class="op">=</span> <span class="op">-</span><span class="fl">3.5</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <hr>
+</div>
 <div class="section level2">
 <h2 id="examples">Examples<a class="anchor" aria-label="anchor" href="#examples"></a>
 </h2>
 <p>For more examples of how to use <strong>pacbiowdlR</strong>, please refer to the package <a href="https://yourusername.github.io/pacbiowdlR/articles/" class="external-link">vignettes</a> and the <a href="https://yourusername.github.io/pacbiowdlR/reference/" class="external-link">reference documentation</a>. Here are a few quick examples:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Using the 'delta' method</span></span>
 <span><span class="fu"><a href="reference/CNAPlot.html">CNAPlot</a></span><span class="op">(</span></span>
 <span>  depth_bigwig_file  <span class="op">=</span> <span class="va">depth_file</span>,</span>
@@ -197,7 +172,7 @@
 <p>For more detailed examples, check out the package vignettes online.</p>
 <hr>
 <p>Enjoy your analysis and please report any issues or suggestions on the <a href="https://github.com/yourusername/pacbiowdlR/issues" class="external-link">GitHub issues page</a>!</p>
-<p>Happy plotting! ```</p>
+<p>Happy plotting!</p>
 </div>
 
   </div>
@@ -232,7 +207,15 @@
 </ul>
 </div>
 
-
+<div class="dev-status">
+<h2 data-toc-skip>Dev status</h2>
+<ul class="list-unstyled">
+<li><a href="https://cran.r-project.org/web/packages/pacbiowdlR" class="external-link"><img src="https://www.r-pkg.org/badges/version/pacbiowdlR?color=blue" alt="CRAN_Status_Badge"></a></li>
+<li><a href="https://cran.rstudio.com/package=pacbiowdlR" class="external-link"><img src="https://cranlogs.r-pkg.org/badges/pacbiowdlR?color=blue" alt="Downloads"></a></li>
+<li><a href="https://github.com/yourusername/pacbiowdlR/actions" class="external-link"><img src="https://github.com/yourusername/pacbiowdlR/workflows/R-CMD-check/badge.svg" alt="R-CMD-check"></a></li>
+<li><a href="https://codecov.io/gh/yourusername/pacbiowdlR" class="external-link"><img src="https://codecov.io/gh/yourusername/pacbiowdlR/branch/master/graph/badge.svg" alt="codecov"></a></li>
+</ul>
+</div>
 
   </div>
 </div>
