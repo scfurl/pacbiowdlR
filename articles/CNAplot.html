@@ -193,12 +193,12 @@ plot dimensions. Otherwise the dimensions can be specified as below.</p>
 <span>  variant_file       <span class="op">=</span>   <span class="va">cna_calls</span>,</span>
 <span>  downsample         <span class="op">=</span> <span class="fl">0.1</span>,  method <span class="op">=</span> <span class="st">"delta"</span>,</span>
 <span>  samplename         <span class="op">=</span> <span class="st">"K562"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="CNAplot_files/figure-html/unnamed-chunk-2-1.png" width="120%" style="display: block; margin: auto;"></p>
+<p><img src="CNAplot_files/figure-html/unnamed-chunk-2-1.png" width="200%" style="display: block; margin: auto;"></p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/CNAPlot.html">CNAPlot</a></span><span class="op">(</span>depth_bigwig_file  <span class="op">=</span>   <span class="va">depth_file</span>,</span>
 <span>  variant_file       <span class="op">=</span>   <span class="va">cna_calls</span>, method <span class="op">=</span> <span class="st">"fit"</span>, </span>
 <span>  samplename         <span class="op">=</span> <span class="st">"K562"</span>, max_value <span class="op">=</span> <span class="fl">3</span>, min_value <span class="op">=</span> <span class="op">-</span><span class="fl">3</span><span class="op">)</span></span></code></pre></div>
-<p><img src="CNAplot_files/figure-html/unnamed-chunk-2-2.png" width="120%" style="display: block; margin: auto;"></p>
+<p><img src="CNAplot_files/figure-html/unnamed-chunk-2-2.png" width="200%" style="display: block; margin: auto;"></p>
 </div>
 </div>
 <div class="section level2">
@@ -219,7 +219,7 @@ black-colored fit line looks best</p>
 <span>  variant_file       <span class="op">=</span>   <span class="va">cna_calls</span>,</span>
 <span>  method <span class="op">=</span> <span class="st">"fit"</span>, line_color <span class="op">=</span> <span class="st">"black"</span>,</span>
 <span>  samplename         <span class="op">=</span> <span class="st">"K562"</span>, max_value <span class="op">=</span> <span class="fl">3</span>, min_value <span class="op">=</span> <span class="op">-</span><span class="fl">3</span>, colors <span class="op">=</span> <span class="va">chrom_palette</span><span class="op">)</span></span></code></pre></div>
-<p><img src="CNAplot_files/figure-html/unnamed-chunk-3-1.png" width="120%" style="display: block; margin: auto;"></p>
+<p><img src="CNAplot_files/figure-html/unnamed-chunk-3-1.png" width="200%" style="display: block; margin: auto;"></p>
 <p>By default, CNAPlot will “accentuate” copy number changes in deleted
 or duplicated regions by applying a weight to those regions outside of
 variants. This effectively minimimizes the visualized variance in these
@@ -234,7 +234,7 @@ should interpret the values with caution.</p>
 <span>  variant_file       <span class="op">=</span>   <span class="va">cna_calls</span>, outside_weight <span class="op">=</span> <span class="fl">0.4</span>, inside_weight <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  method <span class="op">=</span> <span class="st">"fit"</span>, line_color <span class="op">=</span> <span class="st">"black"</span>, max_value <span class="op">=</span> <span class="fl">5</span>, min_value <span class="op">=</span> <span class="op">-</span><span class="fl">5</span>,</span>
 <span>  samplename         <span class="op">=</span> <span class="st">"K562"</span>, colors <span class="op">=</span> <span class="va">chrom_palette</span><span class="op">)</span></span></code></pre></div>
-<p><img src="CNAplot_files/figure-html/unnamed-chunk-4-1.png" width="150%" style="display: block; margin: auto;"></p>
+<p><img src="CNAplot_files/figure-html/unnamed-chunk-4-1.png" width="200%" style="display: block; margin: auto;"></p>
 <div class="section level3">
 <h3 id="deeper-analysis-of-cna">Deeper analysis of CNA<a class="anchor" aria-label="anchor" href="#deeper-analysis-of-cna"></a>
 </h3>
@@ -248,9 +248,12 @@ highlighting, a txdb and org annotation file.</p>
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/CNAPlot_Highlight.html">CNAPlot_Highlight</a></span><span class="op">(</span>depth_bigwig_file  <span class="op">=</span>   <span class="va">depth_file</span>, </span>
 <span>                  txdb <span class="op">=</span> <span class="fu">TxDb.Hsapiens.UCSC.hg38.knownGene</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/TxDb.Hsapiens.UCSC.hg38.knownGene/man/package.html" class="external-link">TxDb.Hsapiens.UCSC.hg38.knownGene</a></span>, </span>
 <span>                  org <span class="op">=</span> <span class="fu">org.Hs.eg.db</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/org.Hs.eg.db/man/org.Hs.egBASE.html" class="external-link">org.Hs.eg.db</a></span>, gene_delta_threshold <span class="op">=</span> <span class="fl">2.5</span>,</span>
-<span>                  variant_file       <span class="op">=</span>   <span class="va">cna_calls</span>, </span>
+<span>                  variant_file       <span class="op">=</span>   <span class="va">cna_calls</span>, downsample <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>                  method <span class="op">=</span> <span class="st">"fit"</span>, line_color <span class="op">=</span> <span class="st">"black"</span>, chr_filter <span class="op">=</span> <span class="st">"chr9"</span>,</span>
 <span>                  samplename         <span class="op">=</span> <span class="st">"K562"</span>, colors <span class="op">=</span> <span class="va">chrom_palette</span><span class="op">)</span></span></code></pre></div>
+<pre><code>Warning:  [1m [22mRemoved 6 rows containing missing values or values outside the scale range
+(`geom_label_repel()`).</code></pre>
+<p><img src="CNAplot_files/figure-html/unnamed-chunk-5-1.png" width="200%" style="display: block; margin: auto;"></p>
 <p>One will not that there are regions that plot as having a 0 value for
 DNA content. This results when the log2 ratio is infinitely negative and
 are indicative of a complete loss of DNA in the region. This can be
@@ -258,13 +261,14 @@ confirmed using the <code>delta</code> method of visualization as shown
 below. We can increase the number of events plotted using the
 <code>downsample</code> parameter. Unsurprisingly the region lost
 contains the tumor suppressors CDKN2A, CDKN2B.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/CNAPlot_Highlight.html">CNAPlot_Highlight</a></span><span class="op">(</span>depth_bigwig_file  <span class="op">=</span>   <span class="va">depth_file</span>, </span>
 <span>                  txdb <span class="op">=</span> <span class="fu">TxDb.Hsapiens.UCSC.hg38.knownGene</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/TxDb.Hsapiens.UCSC.hg38.knownGene/man/package.html" class="external-link">TxDb.Hsapiens.UCSC.hg38.knownGene</a></span>, </span>
 <span>                  org <span class="op">=</span> <span class="fu">org.Hs.eg.db</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/org.Hs.eg.db/man/org.Hs.egBASE.html" class="external-link">org.Hs.eg.db</a></span>, downsample <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>                  variant_file       <span class="op">=</span>   <span class="va">cna_calls</span>, max_value <span class="op">=</span> <span class="fl">20</span>,</span>
 <span>                  method <span class="op">=</span> <span class="st">"delta"</span>, line_color <span class="op">=</span> <span class="st">"black"</span>, chr_filter <span class="op">=</span> <span class="st">"chr9"</span>, highlight_genes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CDKN2A"</span>, <span class="st">"CDKN2B"</span><span class="op">)</span>, </span>
 <span>                  samplename         <span class="op">=</span> <span class="st">"K562"</span>, colors <span class="op">=</span> <span class="va">chrom_palette</span><span class="op">)</span></span></code></pre></div>
+<p><img src="CNAplot_files/figure-html/unnamed-chunk-6-1.png" width="200%" style="display: block; margin: auto;"></p>
 </div>
 </div>
   </div>
