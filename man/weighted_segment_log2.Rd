@@ -26,3 +26,4 @@ ws <- weighted_segment_log2(seg_data)
 print(ws)
 
 }
+\keyword{internal}

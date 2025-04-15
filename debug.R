@@ -1,4 +1,7 @@
 roxygen2::roxygenize()
+devtools::install()
+
+usethis::use_pkgdown_github_pages()
 library(TxDb.Hsapiens.UCSC.hg38.knownGene)
 data_S1 <- read_json_file("/Volumes/furlan_s/sfurlan/250302_leuklong/pbWGS/LL1_S1/20250302_232026_humanwgs_singleton/outputs.json")
 data_S18 <- read_json_file("/Volumes/furlan_s/sfurlan/250302_leuklong/pbWGS/LL2_S18/20250302_232206_humanwgs_singleton/outputs.json")
@@ -30,7 +33,8 @@ CNAPlot(
   samplename         = "MySample", max_value = 3.5, min_value = -3.5, colors = chrom_palette
 )
 
-debug(CNAPlot_Highlight)
+undebug(CNAPlot_Highlight)
+debug(annotateCoverageWithGenes)
 CNAPlot_Highlight(
   depth_bigwig_file  =   data_S1$humanwgs_singleton.cnv_depth_bw,
   variant_file       =   data_S1$humanwgs_singleton.cnv_vcf,

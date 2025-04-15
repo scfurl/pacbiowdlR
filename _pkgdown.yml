@@ -1,0 +1,65 @@
+url: https://scfurl.github.io/pacbiowdlR
+
+destination: "."
+
+template:
+  params:
+    bootswatch: cosmo
+    docsearch:
+      api_key: "YOUR_API_KEY"       # Replace with your API key if you use DocSearch
+      index_name: pacbiowdlR
+
+navbar:
+  title: "pacbiowdlR"
+  left:
+    - icon: fa-home fa-lg
+      href: index.html
+    - text: "Vignettes"
+      href: articles/index.html
+    - text: "Reference"
+      href: reference/index.html
+    - text: "News"
+      href: news/index.html
+  right:
+    - icon: fa-github
+      href: https://github.com/scfurl/pacbiowdlR
+    - icon: fa-bluesky
+      href: https://bsky.app/profile/scfurl.bsky.social
+
+home:
+  links:
+    - text: "Report an Issue"
+      href: https://github.com/scfurl/pacbiowdlR/issues
+
+articles:
+  - title: "Getting Started"
+    desc: >
+      These vignettes provide an introduction to plotting DNA copy number alterations
+      using the **pacbiowdlR** package.
+    contents:
+      - cna_plotting_overview
+      - quick-start
+      - troubleshooting
+
+reference:
+  - title: "Package Overview"
+    desc: >
+      An overview of **pacbiowdlR**.
+    contents:
+      - pacbiowdlR-package
+  - title: "CNA Plot Functions"
+    desc: >
+      Reference documentation for functions to create and customize CNA plots.
+    contents:
+      - CNAPlot
+      - CNAPlot_Highlight
+      - generate_offsets
+      - compute_weighted_log2_ratios
+      - weighted_segment_log2
+
+news:
+  - title: "Release Notes"
+    desc: >
+      Latest news and updates for **pacbiowdlR**.
+    contents:
+      - NEWS

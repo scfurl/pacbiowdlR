@@ -27,8 +27,8 @@
 #' @importFrom AnnotationDbi mapIds
 #' @keywords internal
 #' @export
-annotateCoverageWithGenes <- function(coverage_df,
-                                      txdb = TxDb.Hsapiens.UCSC.hg19.knownGene,
+annotateCoverageWithGenes <- function(coverage_df, species_annotation = org.Hs.eg.db,
+                                      txdb = TxDb.Hsapiens.UCSC.hg38.knownGene,
                                       return_entrez = FALSE) {
   # Convert coverage data frame into GRanges.
   coverage_gr <- GRanges(
@@ -50,7 +50,7 @@ annotateCoverageWithGenes <- function(coverage_df,
     # Convert Entrez IDs to gene symbols.
     suppressMessages({
       coverage_df$gene_symbol <- mapIds(
-        org.Hs.eg.db,
+        species_annotation,
         keys      = gsub("^GeneID:", "", coverage_df$gene_id),  # Remove "GeneID:" prefix, if present.
         column    = "SYMBOL",
         keytype   = "ENTREZID",

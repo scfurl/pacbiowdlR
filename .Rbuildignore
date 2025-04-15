@@ -2,3 +2,7 @@
 ^\.Rproj\.user$
 debug.R
 weightedCNA.R
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^\.github$

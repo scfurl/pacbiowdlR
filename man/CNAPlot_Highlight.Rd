@@ -8,40 +8,12 @@ CNAPlot_Highlight(
   depth_bigwig_file,
   variant_file,
   txdb,
+  org,
   gene_delta_threshold = 2,
-  downsample = 0.01,
+  downsample = 0.1,
   point_size = 0.01,
   line_size = 0.1,
-  colors = NULL,
-  max_value = NULL,
-  min_value = NULL,
-  min_variant_distance = 10000,
-  method = c("fit", "delta", "loess"),
-  trend_window = 50,
-  apply_weight = TRUE,
-  outside_weight = 0.25,
-  inside_weight = 1,
-  variant_alpha = 0.1,
-  nudge_y = 3,
-  samplename = "",
-  chr_filter = NULL,
-  exclude_xy = FALSE,
-  highlight_genes = NULL,
-  gband_file = file.path("~/develop/pacbiowdlR/cytobands.tsv"),
-  gband_y_offset = -0.2,
-  gband_text_size = 2,
-  showCNAbands = FALSE,
-  return_data = FALSE
-)
-
-CNAPlot_Highlight(
-  depth_bigwig_file,
-  variant_file,
-  txdb,
-  gene_delta_threshold = 2,
-  downsample = 0.01,
-  point_size = 0.01,
-  line_size = 0.1,
+  line_color = "red",
   colors = NULL,
   max_value = NULL,
   min_value = NULL,
@@ -121,30 +93,13 @@ CNAPlot_Highlight(
 }
 \value{
 Either a \code{ggplot2} object representing the CNA plot with gene highlights or a list with additional data if \code{return_data} is \code{TRUE}.
-
-Either a \code{ggplot2} object representing the CNA plot with gene highlights or a list with additional data if \code{return_data} is \code{TRUE}.
 }
 \description{
 Generates a genome-wide CNA plot with additional gene annotation and labeling.
 This function extends \code{CNAPlot} by annotating gene coordinates (using \code{annotateCoverageWithGenes()})
 and optionally highlighting selected genes and cytogenetic (G-band) features.
-
-Generates a genome-wide CNA plot with additional gene annotation and labeling.
-This function extends \code{CNAPlot} by annotating gene coordinates (using \code{annotateCoverageWithGenes()})
-and optionally highlighting selected genes and cytogenetic (G-band) features.
 }
 \details{
-The function executes the following steps:
-\enumerate{
-  \item Imports and filters coverage data.
-  \item Downsamples the data and computes delta values using the specified method.
-  \item Imports VCF variant calls, filtering based on chromosome and minimum variant distance.
-  \item Computes genomic offsets (via \code{generate_offsets()}) and marks variant regions.
-  \item Applies weight multipliers and computes a running median trend line using \code{rollapply()}.
-  \item Annotates coverage with gene information using \code{annotateCoverageWithGenes()}.
-  \item Constructs the plot with additional gene points and labels, and if specified, annotates cytogenetic bands.
-}
-
 The function executes the following steps:
 \enumerate{
   \item Imports and filters coverage data.

@@ -6,7 +6,8 @@
 \usage{
 annotateCoverageWithGenes(
   coverage_df,
-  txdb = TxDb.Hsapiens.UCSC.hg19.knownGene,
+  species_annotation = org.Hs.eg.db,
+  txdb = TxDb.Hsapiens.UCSC.hg38.knownGene,
   return_entrez = FALSE
 )
 }

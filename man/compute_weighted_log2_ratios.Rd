@@ -11,14 +11,6 @@ compute_weighted_log2_ratios(
   bin_length_col = "bin_length",
   repeat_fraction_col = "repeat_fraction"
 )
-
-compute_weighted_log2_ratios(
-  data,
-  observed_col = "observed",
-  reference_col = "reference",
-  bin_length_col = "bin_length",
-  repeat_fraction_col = "repeat_fraction"
-)
 }
 \arguments{
 \item{data}{A \code{data.frame} containing the observed, reference, bin length, and repeat fraction columns.}
@@ -33,13 +25,8 @@ compute_weighted_log2_ratios(
 }
 \value{
 The input \code{data} augmented with two new columns: \code{log2_ratio} and \code{weight}.
-
-The input \code{data} augmented with two new columns: \code{log2_ratio} and \code{weight}.
 }
 \description{
-Computes log2 ratios of observed and reference values and calculates a weight for each observation
-based on bin length and repeat fraction.
-
 Computes log2 ratios of observed and reference values and calculates a weight for each observation
 based on bin length and repeat fraction.
 }
@@ -47,18 +34,8 @@ based on bin length and repeat fraction.
 The log2 ratio is computed as \code{log2(observed / reference)}.
   The weight is calculated as the product of the ratio of bin length over the median bin length and
   \code{(1 - repeat_fraction)}.
-
-The log2 ratio is computed as \code{log2(observed / reference)}.
-  The weight is calculated as the product of the ratio of bin length over the median bin length and
-  \code{(1 - repeat_fraction)}.
 }
 \examples{
-df <- data.frame(observed = c(10, 20, 30),
-                 reference = c(8, 18, 33),
-                 bin_length = c(100, 120, 110),
-                 repeat_fraction = c(0.1, 0.2, 0.15))
-result <- compute_weighted_log2_ratios(df, "observed", "reference", "bin_length", "repeat_fraction")
-print(result)
 df <- data.frame(observed = c(10, 20, 30),
                  reference = c(8, 18, 33),
                  bin_length = c(100, 120, 110),
