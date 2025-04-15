@@ -13,6 +13,7 @@
 #' @param downsample Numeric. Proportion of coverage data to retain (e.g., 0.01 for 1 percent).
 #' @param point_size Numeric. Size of the plotted data points.
 #' @param line_size Numeric. Size of the plotted trend line.
+#' @param line_color Character. Color for the trend line.
 #' @param colors Named vector of colors for chromosomes. If \code{NULL}, an alternating palette of black/gray is used.
 #' @param max_value Numeric. Maximum allowed delta value; values above this are capped.
 #' @param min_value Numeric. Minimum allowed delta value; values below this are capped.
@@ -24,6 +25,8 @@
 #' @param outside_weight Numeric. Multiplier applied to delta values outside CNA calls.
 #' @param inside_weight Numeric. Multiplier applied to delta values inside CNA calls.
 #' @param variant_alpha Numeric. Transparency level for variant rectangles.
+#' @param trend_regions Character. One of \code{"both"}, \code{"inside"}, or \code{"outside"} to control where the trend line is plotted.
+#'   Default is \code{"both"}.
 #' @param exclude_xy Logical. If \code{TRUE}, chromosomes X and Y are excluded from the analysis.
 #' @param return_data Logical. If \code{TRUE}, returns a list containing the plot, the coverage data, and variant calls.
 #'
@@ -43,6 +46,12 @@
 #'   \item Reads and filters variant calls from the VCF file.
 #'   \item Computes genomic offsets via \code{generate_offsets()} (assumed to be defined elsewhere).
 #'   \item Applies weighting to delta values and computes a running median trend line using \code{rollapply()}.
+#'   \item Based on the value of \code{trend_regions}, the trend line is shown only for regions:
+#'         \itemize{
+#'           \item \code{"inside"}: only within CNV call regions,
+#'           \item \code{"outside"}: only outside CNV call regions, or
+#'           \item \code{"both"}: across all regions (the default).
+#'         }
 #'   \item Builds the plot with \code{ggplot2} incorporating points, trend line, variant rectangles, and chromosome boundaries.
 #' }
 #'
@@ -79,6 +88,7 @@ CNAPlot <- function(
     outside_weight = 0.25,  # Multiplier for delta outside CNA calls
     inside_weight = 1,
     variant_alpha = 0.1,
+    trend_regions = "inside",
     exclude_xy = TRUE,
     return_data = FALSE
 ) {
@@ -205,7 +215,26 @@ CNAPlot <- function(
     align = "center"
   )
 
+  # --- NEW: Subset or mask the trend line by region ----
+  # Create a logical flag vector that is TRUE when a point is inside any variant call region
+  inside_flag <- sapply(offset$coverage_data$cumulative_genomic_position, function(pos) {
+    if (nrow(data_highlight) > 0 && any(pos >= data_highlight$xmin & pos <= data_highlight$xmax)) {
+      TRUE
+    } else {
+      FALSE
+    }
+  })
+  # Adjust the trend line based on the 'trend_regions' parameter:
+  # "both": no change, "inside": set trend to NA for points outside variant regions,
+  # "outside": set trend to NA for points inside variant regions.
+  if (trend_regions == "inside") {
+    offset$coverage_data$trend[!inside_flag] <- NA
+  } else if (trend_regions == "outside") {
+    offset$coverage_data$trend[inside_flag] <- NA
+  }
+
   # 9) Build base plot
+  # Apply min/max constraints to the weighted values (if provided)
   if (!is.null(min_value)) {
     offset$coverage_data$delta_weighted[offset$coverage_data$delta_weighted < min_value] <- min_value
   }
@@ -236,7 +265,7 @@ CNAPlot <- function(
       size = point_size
     ) +
     scale_color_manual(values = colors, drop = FALSE) +
-    # Add the running trend line
+    # Add the running trend line (only the non-NA values will be plotted)
     geom_line(
       data = offset$coverage_data,
       aes(x = cumulative_genomic_position, y = trend),
@@ -267,7 +296,9 @@ CNAPlot <- function(
     labs(
       title = paste0("CNA ", samplename),
       x = "Chromosome",
-      y = ifelse(method %in% c("loess", "fit"), expression(log[2](frac(Obs, Exp)) ~ "Coverage"), expression(delta ~ Coverage))
+      y = ifelse(method %in% c("loess", "fit"),
+                 expression(log[2](frac(Obs, Exp)) ~ "Coverage"),
+                 expression(delta ~ Coverage))
     ) +
     theme_minimal() +
     theme(
@@ -302,25 +333,28 @@ CNAPlot <- function(
 #' CNA Plot with Gene Highlighting
 #'
 #' Generates a genome-wide CNA plot with additional gene annotation and labeling.
-#' This function extends \code{CNAPlot} by annotating gene coordinates (using \code{annotateCoverageWithGenes()})
-#' and optionally highlighting selected genes and cytogenetic (G-band) features.
+#' This function extends \code{CNAPlot} by annotating gene coordinates (using
+#' \code{annotateCoverageWithGenes()}) and optionally highlighting selected genes
+#' and cytogenetic (G-band) features.
 #'
 #' @param depth_bigwig_file Character. File path to a BigWig file containing coverage depth data.
 #' @param variant_file Character. File path to a VCF file with variant data.
 #' @param txdb A transcript database object used for gene annotation.
+#' @param org A species annotation object (e.g., \code{org.Hs.eg.db}) for mapping gene identifiers.
 #' @param gene_delta_threshold Numeric. Delta threshold for gene annotation filtering.
 #' @param downsample Numeric. Proportion of the coverage data to retain after downsampling.
 #' @param point_size Numeric. Size of individual points in the plot.
 #' @param line_size Numeric. Size of the trend line.
-#' @param colors Named vector of colors for chromosomes; if \code{NULL}, defaults to alternating black and gray.
-#' @param max_value Numeric. Maximum allowed delta value; values above are capped.
-#' @param min_value Numeric. Minimum allowed delta value; values below are capped.
+#' @param line_color Character. Color of the trend line.
+#' @param colors Named vector of colors for chromosomes; if \code{NULL}, defaults to an alternating palette.
+#' @param max_value Numeric. Maximum allowed delta value; values above this are capped.
+#' @param min_value Numeric. Minimum allowed delta value; values below this are capped.
 #' @param min_variant_distance Numeric. Minimum variant length (in bp) to include.
 #' @param method Character. One of \code{"fit"}, \code{"delta"}, or \code{"loess"} determining the method used to compute delta values.
 #' @param trend_window Integer. Window size for computing the running median trend line.
 #' @param apply_weight Logical. If \code{TRUE}, applies a weight multiplier to delta values outside CNA calls.
 #' @param outside_weight Numeric. Weight multiplier applied to delta values outside CNA calls.
-#' @param inside_weight Numeric. Weight multiplier for delta values inside CNA calls.
+#' @param inside_weight Numeric. Weight multiplier applied to delta values inside CNA calls.
 #' @param variant_alpha Numeric. Transparency level for variant call rectangles.
 #' @param nudge_y Numeric. Vertical nudge for positioning gene labels.
 #' @param samplename Character. Sample label used in the plot title.
@@ -331,19 +365,35 @@ CNAPlot <- function(
 #' @param gband_y_offset Numeric. Vertical offset for G-band label placement.
 #' @param gband_text_size Numeric. Text size for G-band labels.
 #' @param showCNAbands Logical. If \code{TRUE}, displays G-band annotations on the plot.
-#' @param return_data Logical. If \code{TRUE}, returns a list containing the plot, coverage data, variant calls, and gene annotations.
+#' @param trend_regions Character. One of \code{"both"}, \code{"inside"}, or \code{"outside"}.
+#'   This option controls where the running median trend line is displayed:
+#'   \describe{
+#'     \item{\code{"both"}}{Trend line is plotted for all points (default).}
+#'     \item{\code{"inside"}}{Trend line is only plotted for positions that fall within variant regions.}
+#'     \item{\code{"outside"}}{Trend line is only plotted for positions that fall outside variant regions.}
+#'   }
+#' @param return_data Logical. If \code{TRUE}, returns a list containing the plot, the coverage data, variant calls, and gene annotations.
 #'
-#' @return Either a \code{ggplot2} object representing the CNA plot with gene highlights or a list with additional data if \code{return_data} is \code{TRUE}.
+#' @return Either a \code{ggplot2} object representing the CNA plot with gene highlights, or a list with additional data when \code{return_data} is \code{TRUE}.
 #'
-#' @details The function executes the following steps:
+#' @details The function performs several steps:
 #' \enumerate{
-#'   \item Imports and filters coverage data.
-#'   \item Downsamples the data and computes delta values using the specified method.
-#'   \item Imports VCF variant calls, filtering based on chromosome and minimum variant distance.
-#'   \item Computes genomic offsets (via \code{generate_offsets()}) and marks variant regions.
-#'   \item Applies weight multipliers and computes a running median trend line using \code{rollapply()}.
-#'   \item Annotates coverage with gene information using \code{annotateCoverageWithGenes()}.
-#'   \item Constructs the plot with additional gene points and labels, and if specified, annotates cytogenetic bands.
+#'   \item Imports and filters coverage data from the BigWig file using \code{import.bw()} and retains standard chromosomes (using \code{keepStandardChromosomes()}).
+#'   \item Optionally loads external GC/repeat data when using the \code{"fit"} method.
+#'   \item Downsamples the coverage data.
+#'   \item Computes delta values using the specified method:
+#'         \itemize{
+#'           \item[\code{"delta"}] subtracts the mean coverage.
+#'           \item[\code{"loess"}] fits a LOESS model and computes log2 ratios.
+#'           \item[\code{"fit"}] fits a linear model to predict coverage based on GC content and repeat fraction.
+#'         }
+#'   \item Reads and filters variant calls from the VCF file.
+#'   \item Computes genomic offsets via \code{generate_offsets()} and marks variant regions.
+#'   \item Applies weighting to delta values with different multipliers for points inside and outside CNV calls.
+#'   \item Computes a running median trend line using \code{rollapply()}, and, based on \code{trend_regions},
+#'         subsets the trend line to display only points inside variants, outside variants, or in both regions.
+#'   \item Annotates gene information on the coverage data using \code{annotateCoverageWithGenes()}.
+#'   \item Constructs the final plot with \code{ggplot2} showing data points, the trend line, variant rectangles, and gene labels (with optional G-band annotations).
 #' }
 #'
 #' @importFrom rtracklayer import.bw
@@ -354,8 +404,9 @@ CNAPlot <- function(
 #' @importFrom ggplot2 ggplot geom_point geom_line scale_color_manual scale_fill_manual geom_vline labs theme_minimal theme guides scale_x_continuous scale_y_continuous element_text element_blank geom_text
 #' @importFrom ggrepel geom_label_repel
 #' @importFrom S4Vectors subjectHits queryHits
+#' @importFrom magrittr "%>%"
 #'
-#'
+#' @keywords internal
 #' @export
 CNAPlot_Highlight <- function(
     depth_bigwig_file,
@@ -372,30 +423,31 @@ CNAPlot_Highlight <- function(
     min_value = NULL,
     min_variant_distance = 10000,
     method = c("fit", "delta", "loess"),
-    trend_window = 50,         # Number of points for running median trend line
-    apply_weight = TRUE,       # If TRUE, weight delta values outside CNA calls
-    outside_weight = 0.25,     # Multiplier for delta outside CNA calls
+    trend_window = 50,
+    apply_weight = TRUE,
+    outside_weight = 0.25,
     inside_weight = 1,
     variant_alpha = 0.1,
     nudge_y = 3,
     samplename = "",
     chr_filter = NULL,
     exclude_xy = FALSE,
-    highlight_genes = NULL,    # Vector of gene symbols to label
+    highlight_genes = NULL,
     gband_file = file.path("~/develop/pacbiowdlR/cytobands.tsv"),
     gband_y_offset = -0.2,
     gband_text_size = 2,
     showCNAbands = FALSE,
+    trend_regions = "both",
     return_data = FALSE
 ) {
   method <- method[1]
 
-  # 1) Import coverage data
+  # 1) Import coverage data using rtracklayer
   coverage_data <- import.bw(depth_bigwig_file)
   coverage_data <- keepStandardChromosomes(coverage_data, pruning.mode = "tidy")
   coverage_data <- as.data.frame(coverage_data)
 
-  # 2) Filter chromosomes
+  # 2) Filter chromosomes: standard chromosomes chr1-22, X, Y.
   valid_chromosomes <- paste0("chr", c(as.character(1:22), "X", "Y"))
   if (method == "fit") {
     data("gc_repeat_data")
@@ -443,15 +495,9 @@ CNAPlot_Highlight <- function(
                                                   repeat_fraction_col = "repeat_fraction")
     coverage_data$delta <- coverage_data$log2_ratio
     coverage_data$delta[is.infinite(coverage_data$delta)] <- 0
-    # if (!is.null(min_value)) {
-    #   coverage_data$delta[coverage_data$delta < min_value] <- min_value
-    # }
-    # if (!is.null(max_value)) {
-    #   coverage_data$delta[coverage_data$delta > max_value] <- max_value
-    # }
   }
 
-  # 5) Read variants from VCF file
+  # 5) Read variants from file
   vcf <- fread(variant_file, skip = "#CHROM")
   colnames(vcf)[1] <- "CHROM"
   vcf <- vcf %>% filter(CHROM %in% valid_chromosomes)
@@ -480,17 +526,17 @@ CNAPlot_Highlight <- function(
   data_highlight <- data.frame()
   if (nrow(variant_df) > 0) {
     data_highlight <- data.frame(
-      xmin     = variant_df$cumulative_start,
-      xmax     = variant_df$cumulative_end,
-      ymin     = -Inf,
-      ymax     = Inf,
+      xmin        = variant_df$cumulative_start,
+      xmax        = variant_df$cumulative_end,
+      ymin        = -Inf,
+      ymax        = Inf,
       VariantType = variant_df$type,
-      seqnames = variant_df$seqnames,
-      x_center = (variant_df$cumulative_start + variant_df$cumulative_end) / 2
+      seqnames    = variant_df$seqnames,
+      x_center    = (variant_df$cumulative_start + variant_df$cumulative_end) / 2
     )
   }
 
-  # 8b) Apply weighting to delta values
+  # 8b) Optional: Apply weighting to delta values
   offset$coverage_data <- offset$coverage_data %>% arrange(cumulative_genomic_position)
   if (apply_weight) {
     offset$coverage_data$multiplier <- sapply(offset$coverage_data$cumulative_genomic_position, function(pos) {
@@ -513,6 +559,22 @@ CNAPlot_Highlight <- function(
     align = "center"
   )
 
+  # --- Subset the trend line according to the trend_regions parameter ---
+  # Create a flag for points that fall within any variant region
+  inside_flag <- sapply(offset$coverage_data$cumulative_genomic_position, function(pos) {
+    if (nrow(data_highlight) > 0 && any(pos >= data_highlight$xmin & pos <= data_highlight$xmax)) {
+      TRUE
+    } else {
+      FALSE
+    }
+  })
+
+  if (trend_regions == "inside") {
+    offset$coverage_data$trend[!inside_flag] <- NA
+  } else if (trend_regions == "outside") {
+    offset$coverage_data$trend[inside_flag] <- NA
+  }
+
   # 9) Annotate genes (using annotateCoverageWithGenes)
   coverage_annot <- offset$coverage_data %>% mutate(end = start)
   coverage_annot <- annotateCoverageWithGenes(coverage_annot, txdb = txdb, species_annotation = org)
@@ -523,14 +585,15 @@ CNAPlot_Highlight <- function(
   }
   coverage_hits <- coverage_hits %>% group_by(gene_symbol) %>% slice_min(start, n = 1) %>% ungroup()
 
-  # 10) Build base plot: get chromosome midpoints for x-axis labels
+  # 10) Build base plot: adjust delta_weighted values to enforce min/max constraints
   if (!is.null(min_value)) {
     offset$coverage_data$delta_weighted[offset$coverage_data$delta_weighted < min_value] <- min_value
   }
   if (!is.null(max_value)) {
     offset$coverage_data$delta_weighted[offset$coverage_data$delta_weighted > max_value] <- max_value
   }
-  chromosome_midpoints <- offset$coverage_data %>% group_by(seqnames) %>% summarize(midpoint = mean(range(cumulative_genomic_position)), .groups = 'drop')
+  chromosome_midpoints <- offset$coverage_data %>%
+    group_by(seqnames) %>% summarize(midpoint = mean(range(cumulative_genomic_position)), .groups = 'drop')
   if (is.null(colors)) {
     chromosome_order <- c(as.character(1:22), "X", "Y")
     if (exclude_xy) {
@@ -556,20 +619,29 @@ CNAPlot_Highlight <- function(
       geom_rect(
         data = data_highlight,
         aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, fill = VariantType),
-        color = "transparent", alpha = variant_alpha
+        color = "transparent",
+        alpha = variant_alpha
       )
     } else {
       NULL
-    }
-    } +
+    } } +
     scale_fill_manual(
       values = c("DEL" = "blue", "DUP" = "red"),
       na.value = "grey80"
     ) +
+    geom_vline(
+      data = offset$coverage_data %>% group_by(seqnames) %>% summarize(boundary = min(cumulative_genomic_position), .groups = "drop"),
+      aes(xintercept = boundary),
+      color = "grey",
+      linetype = "dashed",
+      alpha = 0.6
+    ) +
     labs(
       title = paste0("Genome-Wide CNA ", samplename),
       x = "Chromosome",
-      y = ifelse(method %in% c("loess", "fit"), expression(log[2](frac(Obs, Exp)) ~ "Coverage"), expression(delta ~ Coverage))
+      y = ifelse(method %in% c("loess", "fit"),
+                 expression(log[2](frac(Obs, Exp)) ~ "Coverage"),
+                 expression(delta ~ Coverage))
     ) +
     theme_minimal() +
     theme(
@@ -609,13 +681,17 @@ CNAPlot_Highlight <- function(
   if (!is.null(gband_file) && showCNAbands) {
     bands_df <- fread(gband_file)
     bands_df$chr <- paste0("chr", bands_df$contig)
-    band_gr <- GRanges(seqnames = bands_df$chr,
-                       ranges = IRanges(start = bands_df$start, end = bands_df$end),
-                       band = bands_df$name,
-                       giemsa = bands_df$giemsa)
+    band_gr <- GRanges(
+      seqnames = bands_df$chr,
+      ranges = IRanges(start = bands_df$start, end = bands_df$end),
+      band = bands_df$name,
+      giemsa = bands_df$giemsa
+    )
     bands_gr <- keepStandardChromosomes(band_gr, pruning.mode = "tidy")
-    var_gr <- GRanges(seqnames = variant_calls$seqnames,
-                      ranges = IRanges(start = variant_calls$start, end = variant_calls$end))
+    var_gr <- GRanges(
+      seqnames = variant_calls$seqnames,
+      ranges = IRanges(start = variant_calls$start, end = variant_calls$end)
+    )
     ov <- findOverlaps(var_gr, band_gr)
     if (length(ov) > 0) {
       var_band <- data.frame(
@@ -630,8 +706,10 @@ CNAPlot_Highlight <- function(
       variant_calls$giemsa[var_band$variant_idx] <- var_band$giemsa
       data_highlight$band <- variant_calls$band
       data_highlight$giemsa <- variant_calls$giemsa
-      band_annotations <- data_highlight %>% filter(!is.na(band)) %>% mutate(label = band,
-                                                                             x_label = (xmin + xmax) / 2)
+      band_annotations <- data_highlight %>%
+        filter(!is.na(band)) %>%
+        mutate(label = band,
+               x_label = (xmin + xmax) / 2)
       y_max <- ifelse(is.null(max_value), min(offset$coverage_data$delta_weighted, na.rm = TRUE), max_value)
       y_label <- y_max + gband_y_offset
       p <- p +
@@ -657,7 +735,6 @@ CNAPlot_Highlight <- function(
     return(p)
   }
 }
-
 
 #' Compute Weighted Log2 Ratios
 #'

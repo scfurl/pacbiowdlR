@@ -1,6 +1,3 @@
-Below is an example of an **index.md** file for your pkgdown site. You can customize the badges, image links, and text as needed. Save this file in the root of your package (usually in the "docs" folder or next to your pkgdown configuration) so that pkgdown uses it as the home page.
-
-```markdown
 <!-- badges: start -->
 [![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/pacbiowdlR?color=blue)](https://cran.r-project.org/web/packages/pacbiowdlR)
 [![Downloads](https://cranlogs.r-pkg.org/badges/pacbiowdlR?color=blue)](https://cran.rstudio.com/package=pacbiowdlR)
@@ -12,8 +9,8 @@ Below is an example of an **index.md** file for your pkgdown site. You can custo
 
 <div style="text-align:left">
   <span>
-    <a href="https://github.com/yourusername/pacbiowdlR">
-      <img src="https://raw.githubusercontent.com/yourusername/pacbiowdlR/main/inst/figures/pacbiowdlR_logo.png" width="100" alt="pacbiowdlR Logo"/>
+    <a href="https://github.com/scfurl/pacbiowdlR">
+      <img src="https://raw.githubusercontent.com/scfurl/pacbiowdlR/main/inst/figures/pacbiowdlR_logo.png" width="100" alt="pacbiowdlR Logo"/>
     </a>
     <h2><strong>pacbiowdlR</strong></h2>
     <h4>Plotting Copy Number Alterations from PacBio WDL Data</h4>
@@ -123,5 +120,4 @@ For more detailed examples, check out the package vignettes online.
 Enjoy your analysis and please report any issues or suggestions on the [GitHub issues page](https://github.com/yourusername/pacbiowdlR/issues)! 
 
 Happy plotting!
-```
 

@@ -33,6 +33,7 @@ CNAPlot_Highlight(
   gband_y_offset = -0.2,
   gband_text_size = 2,
   showCNAbands = FALSE,
+  trend_regions = "both",
   return_data = FALSE
 )
 }
@@ -43,6 +44,8 @@ CNAPlot_Highlight(
 
 \item{txdb}{A transcript database object used for gene annotation.}
 
+\item{org}{A species annotation object (e.g., \code{org.Hs.eg.db}) for mapping gene identifiers.}
+
 \item{gene_delta_threshold}{Numeric. Delta threshold for gene annotation filtering.}
 
 \item{downsample}{Numeric. Proportion of the coverage data to retain after downsampling.}
@@ -51,11 +54,13 @@ CNAPlot_Highlight(
 
 \item{line_size}{Numeric. Size of the trend line.}
 
-\item{colors}{Named vector of colors for chromosomes; if \code{NULL}, defaults to alternating black and gray.}
+\item{line_color}{Character. Color of the trend line.}
 
-\item{max_value}{Numeric. Maximum allowed delta value; values above are capped.}
+\item{colors}{Named vector of colors for chromosomes; if \code{NULL}, defaults to an alternating palette.}
 
-\item{min_value}{Numeric. Minimum allowed delta value; values below are capped.}
+\item{max_value}{Numeric. Maximum allowed delta value; values above this are capped.}
+
+\item{min_value}{Numeric. Minimum allowed delta value; values below this are capped.}
 
 \item{min_variant_distance}{Numeric. Minimum variant length (in bp) to include.}
 
@@ -67,7 +72,7 @@ CNAPlot_Highlight(
 
 \item{outside_weight}{Numeric. Weight multiplier applied to delta values outside CNA calls.}
 
-\item{inside_weight}{Numeric. Weight multiplier for delta values inside CNA calls.}
+\item{inside_weight}{Numeric. Weight multiplier applied to delta values inside CNA calls.}
 
 \item{variant_alpha}{Numeric. Transparency level for variant call rectangles.}
 
@@ -89,25 +94,44 @@ CNAPlot_Highlight(
 
 \item{showCNAbands}{Logical. If \code{TRUE}, displays G-band annotations on the plot.}
 
-\item{return_data}{Logical. If \code{TRUE}, returns a list containing the plot, coverage data, variant calls, and gene annotations.}
+\item{trend_regions}{Character. One of \code{"both"}, \code{"inside"}, or \code{"outside"}.
+This option controls where the running median trend line is displayed:
+\describe{
+  \item{\code{"both"}}{Trend line is plotted for all points (default).}
+  \item{\code{"inside"}}{Trend line is only plotted for positions that fall within variant regions.}
+  \item{\code{"outside"}}{Trend line is only plotted for positions that fall outside variant regions.}
+}}
+
+\item{return_data}{Logical. If \code{TRUE}, returns a list containing the plot, the coverage data, variant calls, and gene annotations.}
 }
 \value{
-Either a \code{ggplot2} object representing the CNA plot with gene highlights or a list with additional data if \code{return_data} is \code{TRUE}.
+Either a \code{ggplot2} object representing the CNA plot with gene highlights, or a list with additional data when \code{return_data} is \code{TRUE}.
 }
 \description{
 Generates a genome-wide CNA plot with additional gene annotation and labeling.
-This function extends \code{CNAPlot} by annotating gene coordinates (using \code{annotateCoverageWithGenes()})
-and optionally highlighting selected genes and cytogenetic (G-band) features.
+This function extends \code{CNAPlot} by annotating gene coordinates (using
+\code{annotateCoverageWithGenes()}) and optionally highlighting selected genes
+and cytogenetic (G-band) features.
 }
 \details{
-The function executes the following steps:
+The function performs several steps:
 \enumerate{
-  \item Imports and filters coverage data.
-  \item Downsamples the data and computes delta values using the specified method.
-  \item Imports VCF variant calls, filtering based on chromosome and minimum variant distance.
-  \item Computes genomic offsets (via \code{generate_offsets()}) and marks variant regions.
-  \item Applies weight multipliers and computes a running median trend line using \code{rollapply()}.
-  \item Annotates coverage with gene information using \code{annotateCoverageWithGenes()}.
-  \item Constructs the plot with additional gene points and labels, and if specified, annotates cytogenetic bands.
+  \item Imports and filters coverage data from the BigWig file using \code{import.bw()} and retains standard chromosomes (using \code{keepStandardChromosomes()}).
+  \item Optionally loads external GC/repeat data when using the \code{"fit"} method.
+  \item Downsamples the coverage data.
+  \item Computes delta values using the specified method:
+        \itemize{
+          \item[\code{"delta"}] subtracts the mean coverage.
+          \item[\code{"loess"}] fits a LOESS model and computes log2 ratios.
+          \item[\code{"fit"}] fits a linear model to predict coverage based on GC content and repeat fraction.
+        }
+  \item Reads and filters variant calls from the VCF file.
+  \item Computes genomic offsets via \code{generate_offsets()} and marks variant regions.
+  \item Applies weighting to delta values with different multipliers for points inside and outside CNV calls.
+  \item Computes a running median trend line using \code{rollapply()}, and, based on \code{trend_regions},
+        subsets the trend line to display only points inside variants, outside variants, or in both regions.
+  \item Annotates gene information on the coverage data using \code{annotateCoverageWithGenes()}.
+  \item Constructs the final plot with \code{ggplot2} showing data points, the trend line, variant rectangles, and gene labels (with optional G-band annotations).
 }
 }
+\keyword{internal}

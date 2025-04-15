@@ -1,22 +1,36 @@
 Package: pacbiowdlR
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Visualization of Long Read Sequencing Data
 Version: 0.1.0
-Authors@R: c(
-    person(
-      "Jane", "Doe",
-      email = "jane@example.com",
-      role = c("aut", "cre")
-    )
-  )
-Description: More about what it does (maybe more than one line).
-    Continuation lines should be indented.
-License: What license is it under?
+Authors@R: 
+    person("Scott", "Furlan", , "scottfurlan@gmail.com", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0003-3007-9840"))
+Description: pacbiowdlR provides functions to visualize copy number alterations and 
+    other genomic features from long read sequencing data generated via 
+    PacBio workflows. 
+License: MIT
 Encoding: UTF-8
 LazyData: true
-Imports: Rcpp (>= 1.0.13)
+Imports:
+    GenomicRanges,
+    IRanges,
+    rtracklayer,
+    AnnotationDbi,
+    GenomeInfoDb,
+    GenomicFeatures,
+    S4Vectors,
+    data.table,
+    dplyr,
+    ggplot2,
+    ggrepel,
+    jsonlite,
+    magrittr,
+    zoo
 LinkingTo: Rcpp
 RoxygenNote: 7.3.2
 Depends: 
     R (>= 3.5)
+Suggests:
+    knitr,
+    rmarkdown
 URL: https://scfurl.github.io/pacbiowdlR/

@@ -3,8 +3,8 @@ stopifnot(require("knitr"))
 library("pacbiowdlR")
 knitr::opts_chunk$set(
   dev = "png",
-  dpi = 300,
-  fig.asp = 0.618,
+  dpi = 150,
+  fig.asp = 0.25,
   fig.width = 5,
   out.width = "60%",
   fig.align = "center",

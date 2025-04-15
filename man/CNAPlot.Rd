@@ -25,6 +25,7 @@ CNAPlot(
   outside_weight = 0.25,
   inside_weight = 1,
   variant_alpha = 0.1,
+  trend_regions = "inside",
   exclude_xy = TRUE,
   return_data = FALSE
 )
@@ -47,6 +48,8 @@ Only the first element of the provided vector is used.}
 
 \item{line_size}{Numeric. Size of the plotted trend line.}
 
+\item{line_color}{Character. Color for the trend line.}
+
 \item{colors}{Named vector of colors for chromosomes. If \code{NULL}, an alternating palette of black/gray is used.}
 
 \item{max_value}{Numeric. Maximum allowed delta value; values above this are capped.}
@@ -68,6 +71,9 @@ Only the first element of the provided vector is used.}
 \item{inside_weight}{Numeric. Multiplier applied to delta values inside CNA calls.}
 
 \item{variant_alpha}{Numeric. Transparency level for variant rectangles.}
+
+\item{trend_regions}{Character. One of \code{"both"}, \code{"inside"}, or \code{"outside"} to control where the trend line is plotted.
+Default is \code{"both"}.}
 
 \item{exclude_xy}{Logical. If \code{TRUE}, chromosomes X and Y are excluded from the analysis.}
 
@@ -96,6 +102,12 @@ The function performs several steps:
   \item Reads and filters variant calls from the VCF file.
   \item Computes genomic offsets via \code{generate_offsets()} (assumed to be defined elsewhere).
   \item Applies weighting to delta values and computes a running median trend line using \code{rollapply()}.
+  \item Based on the value of \code{trend_regions}, the trend line is shown only for regions:
+        \itemize{
+          \item \code{"inside"}: only within CNV call regions,
+          \item \code{"outside"}: only outside CNV call regions, or
+          \item \code{"both"}: across all regions (the default).
+        }
   \item Builds the plot with \code{ggplot2} incorporating points, trend line, variant rectangles, and chromosome boundaries.
 }
 }
