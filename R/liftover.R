@@ -25,7 +25,7 @@
 #'   \item{chimer_data_hg38.txt}{Contains only hg38 coordinates for successful liftovers}
 #'   \item{failed_liftover.txt}{Contains records that failed to lift over}
 #' }
-#'
+#' @keywords internal
 #' @examples
 #' \dontrun{
 #' # Multiple files
@@ -312,7 +312,7 @@ liftover_fusion_coordinates <- function(input_file,
 #'   \item{chimer_data_hg38.txt}{Contains only hg38 coordinates for successful liftovers}
 #'   \item{failed_liftover.txt}{Contains records that failed to lift over}
 #' }
-#'
+#' @keywords internal
 #' @examples
 #' \dontrun{
 #' # Multiple files
@@ -601,7 +601,7 @@ liftover_fusion_coordinates <- function(input_file,
 #' liftover_coordinates(c("chr22:23632600-23632600", "chr9:133729451-133729600"),
 #'                      chain_file="hg19ToHg38.over.chain")
 #' }
-#'
+#' @keywords internal
 #' @importFrom utils download.file
 #' @importFrom rtracklayer import.chain liftOver
 #' @importFrom GenomicRanges GRanges

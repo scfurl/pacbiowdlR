@@ -45,5 +45,5 @@ to another assembly, for example from hg19 to hg38.
 liftover_coordinates(c("chr22:23632600-23632600", "chr9:133729451-133729600"),
                      chain_file="hg19ToHg38.over.chain")
 }
-
 }
+\keyword{internal}

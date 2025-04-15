@@ -37,9 +37,7 @@ articles:
       These vignettes provide an introduction to plotting DNA copy number alterations
       using the **pacbiowdlR** package.
     contents:
-      - cna_plotting_overview
-      - quick-start
-      - troubleshooting
+      - CNAplot
 
 reference:
   - title: "Package Overview"

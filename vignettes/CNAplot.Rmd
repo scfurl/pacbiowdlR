@@ -1,5 +1,5 @@
 ---
-title: "Plotting DNA Copy Number Alterations from PacBio WDL Pipeline"
+title: "Plotting DNA Copy Number Alterations"
 author: "Scott Furlan"
 date: "`r Sys.Date()`"
 output: 
@@ -9,9 +9,10 @@ output:
 params:
   EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
 vignette: >
-  %\VignetteIndexEntry{CNA Plotting}
+  %\VignetteIndexEntry{Plotting DNA Copy Number Alterations}
   %\VignetteEncoding{UTF-8}
   %\VignetteEngine{knitr::rmarkdown}
+alias: cna_plotting_overview
 editor_options: 
   chunk_output_type: console
 ---

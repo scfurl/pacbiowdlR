@@ -92,3 +92,4 @@ liftover_fusion_coordinates("chimerdb4_file.txt")
 }
 
 }
+\keyword{internal}
