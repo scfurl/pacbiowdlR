@@ -18,3 +18,4 @@ A list containing GTF data and gene information
 Loads GTF data from a file and caches it for future use.
 The data is only loaded once per R session.
 }
+\keyword{internal}

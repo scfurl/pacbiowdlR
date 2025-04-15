@@ -4,7 +4,7 @@
 #' Get NeoSplice fusion database
 #'
 #' Retrieves the NeoSplice fusion database, loading it only once when first needed.
-#'
+#' @keywords internal
 #' @return A data frame containing the NeoSplice fusion database
 #' @export
 get_neosplice_db <- function() {
@@ -26,6 +26,7 @@ get_neosplice_db <- function() {
 #' @param gtffile Path to the GTF annotation file
 #' @param force Logical. Force reload even if cached (default: FALSE)
 #' @return A list containing GTF data and gene information
+#' @keywords internal
 #' @export
 #'
 load_cached_gtf <- function(gtffile, force = FALSE) {

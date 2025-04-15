@@ -1,4 +1,5 @@
 #' @export
+#' @keywords internal
 pharmcat_json <- function(json_file, genes = c("CYP2B6", "CYP2C9",   "CYP3A5",    "G6PD",   "TPMT", "NUDT15")){
 
   data <- fromJSON(json_file, flatten = TRUE)

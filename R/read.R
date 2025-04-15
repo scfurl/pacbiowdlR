@@ -1,6 +1,7 @@
 #' @importFrom jsonlite fromJSON
 #' @export
-
+#' @keywords internal
+#'
 read_json_file <- function(file_path, sub1 = "/fh/working", sub2 = "/Volumes") {
   # Check if file exists
   if (!file.exists(file_path)) {

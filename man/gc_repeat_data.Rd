@@ -52,4 +52,4 @@ ggplot2::ggplot(gc_repeat_data, ggplot2::aes(x = repeat_fraction)) +
 mod <- lm(predicted_score ~ gc_content + repeat_fraction, data = gc_repeat_data)
 summary(mod)
 }
-\keyword{datasets}
+\keyword{internal}

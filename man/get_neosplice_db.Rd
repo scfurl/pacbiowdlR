@@ -4,7 +4,7 @@
 \alias{get_neosplice_db}
 \title{Get NeoSplice fusion database}
 \usage{
-get_neosplice_db(db_file = NULL, force_reload = FALSE)
+get_neosplice_db()
 }
 \value{
 A data frame containing the NeoSplice fusion database
@@ -12,3 +12,4 @@ A data frame containing the NeoSplice fusion database
 \description{
 Retrieves the NeoSplice fusion database, loading it only once when first needed.
 }
+\keyword{internal}

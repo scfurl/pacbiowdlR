@@ -14,7 +14,7 @@
 #' @import GenomicRanges
 #' @import rtracklayer
 #' @import IRanges
-#'
+#' @keywords internal
 #' @examples
 #' # Annotate multiple positions
 #' coords <- data.frame(chr = c("chr1", "chr16"), pos = c(1000000, 4334103))

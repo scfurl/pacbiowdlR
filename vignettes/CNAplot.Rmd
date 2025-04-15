@@ -1,0 +1,58 @@
+---
+title: "Plotting DNA Copy Number Alterations from PacBio WDL Data"
+author: "Scott Furlan"
+date: "`r Sys.Date()`"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+params:
+  EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
+vignette: >
+  %\VignetteIndexEntry{CNA Plotting}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, child="children/SETTINGS-knitr.txt"}
+```
+```{r pkgs, include=FALSE}
+depth_file <- system.file("extdata", "examples/K562.GRCh38.hificnv.depth.bw", package = "pacbiowdlR")
+cna_calls <- system.file("extdata", "examples/K562.GRCh38.hificnv.vcf.gz", package = "pacbiowdlR")
+
+chrom_palette <- c(
+  "#FF0000", "#FF9900", "#FFCC00", "#00FF00", "#6699FF", "#CC33FF",
+  "#999912", "#999999", "#FF00CC", "#CC0000", "#FFCCCC", "#FFFF00",
+  "#CCFF00", "#358000", "#0000CC", "#99CCFF", "#00FFFF", "#ECFFFF",
+  "#9900CC", "#CC99FF", "#996600", "#666600", "#666666", "#CCCCCC",
+  "#79CC3B", "#E0EC3B", "#CCC99F"
+)
+
+CNAPlot(
+  depth_bigwig_file  =   depth_file,
+  variant_file       =   cna_calls,
+  txdb               = TxDb.Hsapiens.UCSC.hg38.knownGene,
+  downsample         = 0.1,  method = "fit",
+  samplename         = "K562", max_value = 3.5, min_value = -3.5, colors = chrom_palette
+)
+
+CNAPlot(
+  depth_bigwig_file  =   depth_file,
+  variant_file       =   cna_calls,
+  txdb               = TxDb.Hsapiens.UCSC.hg38.knownGene,
+  downsample         = 0.1,  method = "delta",
+  samplename         = "K562", colors = chrom_palette
+)
+
+CNAPlot(
+  depth_bigwig_file  =   depth_file,
+  variant_file       =   cna_calls,
+  txdb               = TxDb.Hsapiens.UCSC.hg38.knownGene,
+  downsample         = 0.1,  method = "loess",
+  samplename         = "K562", colors = chrom_palette
+)
+
+```
+

@@ -37,3 +37,4 @@ Improved function to annotate genomic coordinates based on a GTF file
 coords <- data.frame(chr = c("chr1", "chr16"), pos = c(1000000, 4334103))
 results <- annotate_genomic_coordinates(coords, "hg38", "path/to/gencode.v38.annotation.gtf")
 }
+\keyword{internal}
