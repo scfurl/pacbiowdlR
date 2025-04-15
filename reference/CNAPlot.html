@@ -98,6 +98,7 @@ and overlays variant calls as rectangles. A running median trend line is compute
 <span>  outside_weight <span class="op">=</span> <span class="fl">0.25</span>,</span>
 <span>  inside_weight <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  variant_alpha <span class="op">=</span> <span class="fl">0.1</span>,</span>
+<span>  trend_regions <span class="op">=</span> <span class="st">"inside"</span>,</span>
 <span>  exclude_xy <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  return_data <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -138,6 +139,10 @@ Only the first element of the provided vector is used.</p></dd>
 
 <dt id="arg-line-size">line_size<a class="anchor" aria-label="anchor" href="#arg-line-size"></a></dt>
 <dd><p>Numeric. Size of the plotted trend line.</p></dd>
+
+
+<dt id="arg-line-color">line_color<a class="anchor" aria-label="anchor" href="#arg-line-color"></a></dt>
+<dd><p>Character. Color for the trend line.</p></dd>
 
 
 <dt id="arg-colors">colors<a class="anchor" aria-label="anchor" href="#arg-colors"></a></dt>
@@ -184,6 +189,11 @@ Only the first element of the provided vector is used.</p></dd>
 <dd><p>Numeric. Transparency level for variant rectangles.</p></dd>
 
 
+<dt id="arg-trend-regions">trend_regions<a class="anchor" aria-label="anchor" href="#arg-trend-regions"></a></dt>
+<dd><p>Character. One of <code>"both"</code>, <code>"inside"</code>, or <code>"outside"</code> to control where the trend line is plotted.
+Default is <code>"both"</code>.</p></dd>
+
+
 <dt id="arg-exclude-xy">exclude_xy<a class="anchor" aria-label="anchor" href="#arg-exclude-xy"></a></dt>
 <dd><p>Logical. If <code>TRUE</code>, chromosomes X and Y are excluded from the analysis.</p></dd>
 
@@ -208,6 +218,10 @@ Only the first element of the provided vector is used.</p></dd>
 <li><p>Reads and filters variant calls from the VCF file.</p></li>
 <li><p>Computes genomic offsets via <code><a href="generate_offsets.html">generate_offsets()</a></code> (assumed to be defined elsewhere).</p></li>
 <li><p>Applies weighting to delta values and computes a running median trend line using <code>rollapply()</code>.</p></li>
+<li><p>Based on the value of <code>trend_regions</code>, the trend line is shown only for regions:</p><ul><li><p><code>"inside"</code>: only within CNV call regions,</p></li>
+<li><p><code>"outside"</code>: only outside CNV call regions, or</p></li>
+<li><p><code>"both"</code>: across all regions (the default).</p></li>
+</ul></li>
 <li><p>Builds the plot with <code>ggplot2</code> incorporating points, trend line, variant rectangles, and chromosome boundaries.</p></li>
 </ol></div>
     <div id="note">
