@@ -1,6 +1,6 @@
 url: https://scfurl.github.io/pacbiowdlR
 
-destination: "."
+destination: "docs"
 
 template:
   params:
