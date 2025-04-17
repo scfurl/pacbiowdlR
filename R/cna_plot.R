@@ -67,7 +67,7 @@
 #' @importFrom magrittr %>%
 #' @keywords internal
 #' @export
-CNAPlot <- function(
+CNA_plot <- function(
     depth_bigwig_file,
     variant_file,
     txdb,
@@ -333,7 +333,7 @@ CNAPlot <- function(
 #' CNA Plot with Gene Highlighting
 #'
 #' Generates a genome-wide CNA plot with additional gene annotation and labeling.
-#' This function extends \code{CNAPlot} by annotating gene coordinates (using
+#' This function extends \code{CNA_plot} by annotating gene coordinates (using
 #' \code{annotateCoverageWithGenes()}) and optionally highlighting selected genes
 #' and cytogenetic (G-band) features.
 #'
@@ -408,7 +408,7 @@ CNAPlot <- function(
 #'
 #' @keywords internal
 #' @export
-CNAPlot_Highlight <- function(
+CNA_plot_highlight <- function(
     depth_bigwig_file,
     variant_file,
     txdb,

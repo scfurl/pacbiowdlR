@@ -86,12 +86,12 @@ library(pacbiowdlR)
 depth_file <- system.file("extdata", "examples/K562.GRCh38.hificnv.depth.bw", package = "pacbiowdlR")
 cna_calls <- system.file("extdata", "examples/K562.GRCh38.hificnv.vcf.gz", package = "pacbiowdlR")
 
-CNAPlot(depth_bigwig_file  =   depth_file, trend_regions = "inside",
+CNA_plot(depth_bigwig_file  =   depth_file, trend_regions = "inside",
   variant_file       =   cna_calls, 
   downsample         = 0.1,  method = "delta",
   samplename         = "K562")
 
-CNAPlot(depth_bigwig_file  =   depth_file,
+CNA_plot(depth_bigwig_file  =   depth_file,
   variant_file       =   cna_calls, method = "fit", 
   samplename         = "K562", max_value = 3, min_value = -3)
 
@@ -110,7 +110,7 @@ chrom_palette <- c(
   "#79CC3B", "#E0EC3B", "#CCC99F"
 )
 
-CNAPlot(depth_bigwig_file  =   depth_file,
+CNA_plot(depth_bigwig_file  =   depth_file,
   variant_file       =   cna_calls,
   method = "fit", line_color = "black",
   samplename         = "K562", max_value = 3, min_value = -3, colors = chrom_palette)
@@ -119,11 +119,11 @@ CNAPlot(depth_bigwig_file  =   depth_file,
 ```
 
 
-By default, CNAPlot will "accentuate" copy number changes in deleted or duplicated regions by applying a weight to those regions outside of variants.  This effectively minimimizes the visualized variance in these regions.  This feature can be turned off, or modulated by adjusting the weight via the `outside_weight` parameter.  One can also change the weighting of the `inside_weight` to further maximize visualization.  However it is critical to note that these weights are applied AFTER estimating the y-axis values, therefore one should interpret the values with caution.
+By default, CNA_plot will "accentuate" copy number changes in deleted or duplicated regions by applying a weight to those regions outside of variants.  This effectively minimimizes the visualized variance in these regions.  This feature can be turned off, or modulated by adjusting the weight via the `outside_weight` parameter.  One can also change the weighting of the `inside_weight` to further maximize visualization.  However it is critical to note that these weights are applied AFTER estimating the y-axis values, therefore one should interpret the values with caution.
 
 ```{r, fig.width=15, out.width="200%", eval=TRUE}
 
-CNAPlot(depth_bigwig_file  =   depth_file,
+CNA_plot(depth_bigwig_file  =   depth_file,
   variant_file       =   cna_calls, outside_weight = 0.4, inside_weight = 2,
   method = "fit", line_color = "black", max_value = 5, min_value = -5,
   samplename         = "K562", colors = chrom_palette)
@@ -134,12 +134,12 @@ CNAPlot(depth_bigwig_file  =   depth_file,
 
 ### Deeper analysis of CNA
 
-Using *pacbiowdlR*, one can take a deeper look at copy number alterations.  For example in Chr9 of the K562 data, we see regions of signifiantly deleted DNA (as evidenced by coverage inference).  We can use the `CNAPlot_Highlight` function to discover genes amplified in this region.  Two additional objects are needed for gene highlighting, a txdb and org annotation file.
+Using *pacbiowdlR*, one can take a deeper look at copy number alterations.  For example in Chr9 of the K562 data, we see regions of signifiantly deleted DNA (as evidenced by coverage inference).  We can use the `CNA_plot_highlight` function to discover genes amplified in this region.  Two additional objects are needed for gene highlighting, a txdb and org annotation file.
 
 
 ```{r, fig.width=15, out.width="200%", eval=TRUE}
 
-CNAPlot_Highlight(depth_bigwig_file  =   depth_file, 
+CNA_plot_highlight(depth_bigwig_file  =   depth_file, 
                   txdb = TxDb.Hsapiens.UCSC.hg38.knownGene::TxDb.Hsapiens.UCSC.hg38.knownGene, 
                   org = org.Hs.eg.db::org.Hs.eg.db, gene_delta_threshold = 2.5,
                   variant_file       =   cna_calls, downsample = 1,
@@ -150,7 +150,7 @@ CNAPlot_Highlight(depth_bigwig_file  =   depth_file,
 One will not that there are regions that plot as having a 0 value for DNA content.  This results when the log2 ratio is infinitely negative and are indicative of a complete loss of DNA in the region.  This can be confirmed using the `delta` method of visualization as shown below. We can increase the number of events plotted using the `downsample` parameter. Unsurprisingly the region lost contains the tumor suppressors CDKN2A, CDKN2B.
 
 ```{r, fig.width=15, out.width="200%", eval=TRUE}
-CNAPlot_Highlight(depth_bigwig_file  =   depth_file, 
+CNA_plot_highlight(depth_bigwig_file  =   depth_file, 
                   txdb = TxDb.Hsapiens.UCSC.hg38.knownGene::TxDb.Hsapiens.UCSC.hg38.knownGene, 
                   org = org.Hs.eg.db::org.Hs.eg.db, downsample = 1,
                   variant_file       =   cna_calls, max_value = 20,

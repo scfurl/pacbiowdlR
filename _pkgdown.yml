@@ -38,6 +38,7 @@ articles:
       using the **pacbiowdlR** package.
     contents:
       - CNAplot
+      - Fusionplot
 
 reference:
   - title: "Package Overview"
@@ -49,8 +50,10 @@ reference:
     desc: >
       Reference documentation for functions to create and customize CNA plots.
     contents:
-      - CNAPlot
-      - CNAPlot_Highlight
+      - CNA_plot
+      - CNA_plot_highlight
+      - fusion_plot
+      - get_fusions_from_vcf
       - generate_offsets
       - compute_weighted_log2_ratios
       - weighted_segment_log2

@@ -32,5 +32,5 @@ results <- get_fusion_sequences(fusion_df, n_bp = 100)
 # Then create FASTA file
 create_fusion_fasta(results, "my_fusion_sequences.fasta")
 }
-
 }
+\keyword{internal}

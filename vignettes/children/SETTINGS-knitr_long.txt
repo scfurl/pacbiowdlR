@@ -1,0 +1,14 @@
+```{r, SETTINGS-knitr, include=FALSE}
+stopifnot(require("knitr"))
+library("pacbiowdlR")
+knitr::opts_chunk$set(
+  dev = "png",
+  dpi = 150,
+  fig.asp = 0.8,
+  fig.width = 4,
+  out.width = "60%",
+  fig.align = "center",
+  comment = NA,
+  eval = if (isTRUE(exists("params"))) params$EVAL else FALSE
+)
+```

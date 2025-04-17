@@ -56,3 +56,4 @@ write.csv(results, "fusion_sequences.csv", row.names = FALSE)
 }
 
 }
+\keyword{internal}

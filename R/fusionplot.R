@@ -1,3 +1,103 @@
+
+#' Plot genomic fusions using circos plots
+#'
+#' @description
+#' Creates a circos plot of genomic fusions, with options to highlight specific fusions
+#' and annotate links based on breakpoint types.  Data input should ideally be generated from the
+#' 'get_fusions_from_vcf' function
+#'
+#' @param sv_data A data frame containing fusion data with at least the columns
+#'   `chr1`, `chr2`, `start1`, and `start2`. If `annotate=TRUE`, must also include
+#'   `bp1_type` and `bp2_type` columns.
+#' @param highlight Integer vector of row indices to highlight with a thicker black line. Default is NULL.
+#' @param annotate Logical; whether to color-code links based on fusion types (genic vs. intergenic). Default is FALSE.
+#' @param title Character; title for the plot. Default is empty string.
+#'
+#' @return Invisibly returns NULL, but creates a circos plot as a side effect.
+#'
+#' @details
+#' The function creates a circos plot showing genomic fusions. When `annotate=TRUE`,
+#' fusions are color-coded:
+#' - Red: gene-gene fusions (both breakpoints are genic)
+#' - Blue: mixed fusions (one breakpoint is genic, the other intergenic)
+#' - Green: intergenic fusions (both breakpoints are intergenic)
+#'
+#' @examples
+#' \dontrun{
+#' # Basic plot
+#' plot_fusions(fusions)
+#'
+#' # Highlight the first three fusions and add annotation
+#' plot_fusions(fusions, highlight = 1:3, annotate = TRUE,
+#'              title = "Genomic Fusions with Highlighted Examples")
+#' }
+#'
+#' @importFrom circlize circos.initializeWithIdeogram circos.genomicLink circos.clear
+#' @importFrom graphics title legend
+#'
+#' @export
+plot_fusions <- function(sv_data, highlight = NULL, annotate = FALSE, title = "") {
+  if (!all(colnames(sv_data)[1:4] == c("chr1", "chr2", "start1", "start2"))) {
+    stop("Input data must have columns 'chr1', 'chr2', 'start1', 'start2' in that order")
+  }
+
+  if (annotate && !all(c("bp1_type", "bp2_type") %in% colnames(sv_data))) {
+    stop("When annotate=TRUE, input data must include 'bp1_type' and 'bp2_type' columns")
+  }
+
+  if (!is.null(highlight)) {
+    highlight <- sv_data[highlight, ]
+    bed3 <- highlight[, c(1, 3)]
+    colnames(bed3) <- c("chr", "start")
+    bed3$end <- bed3$start
+    bed4 <- highlight[, c(2, 4)]
+    colnames(bed4) <- c("chr", "start")
+    bed4$end <- bed4$start
+  }
+
+  bed1 <- sv_data[, c(1, 3)]
+  colnames(bed1) <- c("chr", "start")
+  bed1$end <- bed1$start
+
+  bed2 <- sv_data[, c(2, 4)]
+  colnames(bed2) <- c("chr", "start")
+  bed2$end <- bed2$start
+
+  link_colors <- rep("grey", nrow(bed1))
+
+  if (annotate) {
+    both_genic <- sv_data$bp1_type == "genic" & sv_data$bp2_type == "genic"
+    mixed_genic <- (sv_data$bp1_type == "genic" & sv_data$bp2_type != "genic") |
+      (sv_data$bp1_type != "genic" & sv_data$bp2_type == "genic")
+    both_intergenic <- sv_data$bp1_type != "genic" & sv_data$bp2_type != "genic"
+
+    link_colors[both_genic] <- "#E41A1C80"
+    link_colors[mixed_genic] <- "#377EB880"
+    link_colors[both_intergenic] <- "#4DAF4A80"
+  }
+
+  circlize::circos.initializeWithIdeogram()
+  circlize::circos.genomicLink(bed1, bed2, col = link_colors, border = NA)
+
+  if (!is.null(highlight)) {
+    circlize::circos.genomicLink(bed3, bed4, col = "black", lwd = 10)
+  }
+
+  graphics::title(title)
+
+  if (annotate) {
+    graphics::legend("bottomright",
+                     legend = c("Gene-Gene Fusion", "Gene-Intergenic Fusion", "Intergenic-Intergenic"),
+                     fill = c("#E41A1C80", "#377EB880", "#4DAF4A80"),
+                     title = "Fusion Types", border = NA, bty = "n")
+  }
+
+  circlize::circos.clear()
+
+  invisible(NULL)
+}
+
+
 #' Extract Fusions from VCF and Generate a Circos Plot
 #'
 #' Reads a gzipped VCF file containing structural variant data, applies several filters,
@@ -598,7 +698,7 @@ get_neosplice_db <- function(db_file = system.file("extdata", "fusions/NeoSplice
 #' @examples
 #' # Parse a NeoSplice database
 #' db_fusions <- parse_neosplice_database("path/to/NeoSplice_hg38_inframe_fusion.txt.gz")
-#'
+#' @keywords internal
 #' # Examine the first few rows
 #' head(db_fusions)
 parse_neosplice_database <- function(file_path) {
@@ -758,7 +858,7 @@ parse_neosplice_database <- function(file_path) {
 #' @importFrom GenomicRanges GRanges
 #' @importFrom IRanges IRanges
 #' @importFrom dplyr %>%
-#'
+#' @keywords internal
 #' @export
 get_fusion_sequences <- function(fusion_df, n_bp = 100) {
   # Check for required columns
@@ -855,7 +955,7 @@ get_fusion_sequences <- function(fusion_df, n_bp = 100) {
 #' # Then create FASTA file
 #' create_fusion_fasta(results, "my_fusion_sequences.fasta")
 #' }
-#'
+#' @keywords internal
 #' @export
 create_fusion_fasta <- function(fusion_df, file_path = "fusion_sequences.fasta", include_genes = TRUE) {
   # Check if fusion_sequence column exists

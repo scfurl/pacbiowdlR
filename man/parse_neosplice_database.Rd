@@ -19,7 +19,12 @@ This function correctly handles the column naming and format specific to NeoSpli
 \examples{
 # Parse a NeoSplice database
 db_fusions <- parse_neosplice_database("path/to/NeoSplice_hg38_inframe_fusion.txt.gz")
-
-# Examine the first few rows
-head(db_fusions)
 }
+\keyword{#}
+\keyword{Examine}
+\keyword{few}
+\keyword{first}
+\keyword{head(db_fusions)}
+\keyword{internal}
+\keyword{rows}
+\keyword{the}

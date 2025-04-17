@@ -17,7 +17,7 @@ editor_options:
   chunk_output_type: console
 ---
 
-```{r, child="children/SETTINGS-knitr_wide.txt"}
+```{r, child="children/SETTINGS-knitr_long.txt"}
 ```
 
 
@@ -46,15 +46,16 @@ fusions <- get_fusions_from_vcf(sv_file, gtf_file = gtf, plot = T, annotate = T,
 
 ```
 
-Okay, that is a seemingly overwhelming number of gene-gene fusions...  We can filter the fusion calls to known fusions
+Okay, that is a seemingly overwhelming number of gene-gene fusions...  We can filter the fusion calls to known fusions and highlight the fusions that are found in the database.
 
 ```{r, eval=TRUE}
 db_fusions <- get_neosplice_db()
 
 results <- find_related_fusions(fusions, db_fusions)
-hits <- which(lapply(results, function(f) length(f)>0) %>% unlist()) %>% as.numeric()
+hits <- as.numeric(unlist(which(lapply(results, function(f) length(f)>0))))
 fusions[hits,]
 print_fusion_matches(results[hits])
 
-fusions <- get_fusions_from_vcf(sv_file, gtf_file = gtf, plot = T, filter = "", highlight = hits)
+plot_fusions(fusions, annotate = T, highlight = hits)
 ```
+
