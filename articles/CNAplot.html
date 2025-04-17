@@ -98,7 +98,7 @@
                         <h4 data-toc-skip class="author">Scott
 Furlan</h4>
             
-            <h4 data-toc-skip class="date">2025-04-15</h4>
+            <h4 data-toc-skip class="date">2025-04-16</h4>
       
 
       <div class="hidden name"><code>CNAplot.Rmd</code></div>
@@ -195,13 +195,13 @@ plot dimensions. Otherwise the dimensions can be specified as below.</p>
 <span><span class="va">depth_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"examples/K562.GRCh38.hificnv.depth.bw"</span>, package <span class="op">=</span> <span class="st">"pacbiowdlR"</span><span class="op">)</span></span>
 <span><span class="va">cna_calls</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"examples/K562.GRCh38.hificnv.vcf.gz"</span>, package <span class="op">=</span> <span class="st">"pacbiowdlR"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/CNAPlot.html">CNAPlot</a></span><span class="op">(</span>depth_bigwig_file  <span class="op">=</span>   <span class="va">depth_file</span>, trend_regions <span class="op">=</span> <span class="st">"inside"</span>,</span>
+<span><span class="fu"><a href="../reference/CNA_plot.html">CNA_plot</a></span><span class="op">(</span>depth_bigwig_file  <span class="op">=</span>   <span class="va">depth_file</span>, trend_regions <span class="op">=</span> <span class="st">"inside"</span>,</span>
 <span>  variant_file       <span class="op">=</span>   <span class="va">cna_calls</span>, </span>
 <span>  downsample         <span class="op">=</span> <span class="fl">0.1</span>,  method <span class="op">=</span> <span class="st">"delta"</span>,</span>
 <span>  samplename         <span class="op">=</span> <span class="st">"K562"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="CNAplot_files/figure-html/unnamed-chunk-2-1.png" width="100%" style="display: block; margin: auto;"></p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/CNAPlot.html">CNAPlot</a></span><span class="op">(</span>depth_bigwig_file  <span class="op">=</span>   <span class="va">depth_file</span>,</span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/CNA_plot.html">CNA_plot</a></span><span class="op">(</span>depth_bigwig_file  <span class="op">=</span>   <span class="va">depth_file</span>,</span>
 <span>  variant_file       <span class="op">=</span>   <span class="va">cna_calls</span>, method <span class="op">=</span> <span class="st">"fit"</span>, </span>
 <span>  samplename         <span class="op">=</span> <span class="st">"K562"</span>, max_value <span class="op">=</span> <span class="fl">3</span>, min_value <span class="op">=</span> <span class="op">-</span><span class="fl">3</span><span class="op">)</span></span></code></pre></div>
 <p><img src="CNAplot_files/figure-html/unnamed-chunk-2-2.png" width="100%" style="display: block; margin: auto;"></p>
@@ -221,12 +221,12 @@ black-colored fit line looks best</p>
 <span>  <span class="st">"#79CC3B"</span>, <span class="st">"#E0EC3B"</span>, <span class="st">"#CCC99F"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/CNAPlot.html">CNAPlot</a></span><span class="op">(</span>depth_bigwig_file  <span class="op">=</span>   <span class="va">depth_file</span>,</span>
+<span><span class="fu"><a href="../reference/CNA_plot.html">CNA_plot</a></span><span class="op">(</span>depth_bigwig_file  <span class="op">=</span>   <span class="va">depth_file</span>,</span>
 <span>  variant_file       <span class="op">=</span>   <span class="va">cna_calls</span>,</span>
 <span>  method <span class="op">=</span> <span class="st">"fit"</span>, line_color <span class="op">=</span> <span class="st">"black"</span>,</span>
 <span>  samplename         <span class="op">=</span> <span class="st">"K562"</span>, max_value <span class="op">=</span> <span class="fl">3</span>, min_value <span class="op">=</span> <span class="op">-</span><span class="fl">3</span>, colors <span class="op">=</span> <span class="va">chrom_palette</span><span class="op">)</span></span></code></pre></div>
 <p><img src="CNAplot_files/figure-html/unnamed-chunk-3-1.png" width="200%" style="display: block; margin: auto;"></p>
-<p>By default, CNAPlot will “accentuate” copy number changes in deleted
+<p>By default, CNA_plot will “accentuate” copy number changes in deleted
 or duplicated regions by applying a weight to those regions outside of
 variants. This effectively minimimizes the visualized variance in these
 regions. This feature can be turned off, or modulated by adjusting the
@@ -236,7 +236,7 @@ maximize visualization. However it is critical to note that these
 weights are applied AFTER estimating the y-axis values, therefore one
 should interpret the values with caution.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/CNAPlot.html">CNAPlot</a></span><span class="op">(</span>depth_bigwig_file  <span class="op">=</span>   <span class="va">depth_file</span>,</span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/CNA_plot.html">CNA_plot</a></span><span class="op">(</span>depth_bigwig_file  <span class="op">=</span>   <span class="va">depth_file</span>,</span>
 <span>  variant_file       <span class="op">=</span>   <span class="va">cna_calls</span>, outside_weight <span class="op">=</span> <span class="fl">0.4</span>, inside_weight <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  method <span class="op">=</span> <span class="st">"fit"</span>, line_color <span class="op">=</span> <span class="st">"black"</span>, max_value <span class="op">=</span> <span class="fl">5</span>, min_value <span class="op">=</span> <span class="op">-</span><span class="fl">5</span>,</span>
 <span>  samplename         <span class="op">=</span> <span class="st">"K562"</span>, colors <span class="op">=</span> <span class="va">chrom_palette</span><span class="op">)</span></span></code></pre></div>
@@ -247,11 +247,11 @@ should interpret the values with caution.</p>
 <p>Using <em>pacbiowdlR</em>, one can take a deeper look at copy number
 alterations. For example in Chr9 of the K562 data, we see regions of
 signifiantly deleted DNA (as evidenced by coverage inference). We can
-use the <code>CNAPlot_Highlight</code> function to discover genes
+use the <code>CNA_plot_highlight</code> function to discover genes
 amplified in this region. Two additional objects are needed for gene
 highlighting, a txdb and org annotation file.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/CNAPlot_Highlight.html">CNAPlot_Highlight</a></span><span class="op">(</span>depth_bigwig_file  <span class="op">=</span>   <span class="va">depth_file</span>, </span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/CNA_plot_highlight.html">CNA_plot_highlight</a></span><span class="op">(</span>depth_bigwig_file  <span class="op">=</span>   <span class="va">depth_file</span>, </span>
 <span>                  txdb <span class="op">=</span> <span class="fu">TxDb.Hsapiens.UCSC.hg38.knownGene</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/TxDb.Hsapiens.UCSC.hg38.knownGene/man/package.html" class="external-link">TxDb.Hsapiens.UCSC.hg38.knownGene</a></span>, </span>
 <span>                  org <span class="op">=</span> <span class="fu">org.Hs.eg.db</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/org.Hs.eg.db/man/org.Hs.egBASE.html" class="external-link">org.Hs.eg.db</a></span>, gene_delta_threshold <span class="op">=</span> <span class="fl">2.5</span>,</span>
 <span>                  variant_file       <span class="op">=</span>   <span class="va">cna_calls</span>, downsample <span class="op">=</span> <span class="fl">1</span>,</span>
@@ -268,7 +268,7 @@ below. We can increase the number of events plotted using the
 <code>downsample</code> parameter. Unsurprisingly the region lost
 contains the tumor suppressors CDKN2A, CDKN2B.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/CNAPlot_Highlight.html">CNAPlot_Highlight</a></span><span class="op">(</span>depth_bigwig_file  <span class="op">=</span>   <span class="va">depth_file</span>, </span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/CNA_plot_highlight.html">CNA_plot_highlight</a></span><span class="op">(</span>depth_bigwig_file  <span class="op">=</span>   <span class="va">depth_file</span>, </span>
 <span>                  txdb <span class="op">=</span> <span class="fu">TxDb.Hsapiens.UCSC.hg38.knownGene</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/TxDb.Hsapiens.UCSC.hg38.knownGene/man/package.html" class="external-link">TxDb.Hsapiens.UCSC.hg38.knownGene</a></span>, </span>
 <span>                  org <span class="op">=</span> <span class="fu">org.Hs.eg.db</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/org.Hs.eg.db/man/org.Hs.egBASE.html" class="external-link">org.Hs.eg.db</a></span>, downsample <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>                  variant_file       <span class="op">=</span>   <span class="va">cna_calls</span>, max_value <span class="op">=</span> <span class="fl">20</span>,</span>

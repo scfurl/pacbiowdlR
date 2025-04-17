@@ -3,7 +3,8 @@ pkgdown: 2.1.1
 pkgdown_sha: ~
 articles:
   CNAplot: CNAplot.html
-last_built: 2025-04-16T00:51Z
+  Fusionplot: Fusionplot.html
+last_built: 2025-04-17T01:35Z
 urls:
   reference: https://scfurl.github.io/pacbiowdlR/reference
   article: https://scfurl.github.io/pacbiowdlR/articles
