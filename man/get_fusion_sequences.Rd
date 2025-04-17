@@ -4,7 +4,7 @@
 \alias{get_fusion_sequences}
 \title{Generate Predicted Genomic Fusion Sequences}
 \usage{
-get_fusion_sequences(fusion_df, n_bp = 100)
+get_fusion_sequences(fusion_df, n_bp = 100, verbose = F)
 }
 \arguments{
 \item{fusion_df}{A data frame containing genomic fusion information with the following columns:
@@ -19,6 +19,8 @@ get_fusion_sequences(fusion_df, n_bp = 100)
 
 \item{n_bp}{Integer specifying the number of base pairs to extract from each side
 of the fusion. Default is 100bp.}
+
+\item{verbose}{Logical. if \code{TRUE}, will provide messaging.}
 }
 \value{
 The original data frame with an additional column 'fusion_sequence' containing

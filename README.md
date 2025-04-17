@@ -35,7 +35,7 @@ Or install the development version from **GitHub**:
 
 ```r
 if (!require("devtools")) install.packages("devtools")
-devtools::install_github("yourusername/pacbiowdlR")
+devtools::install_github("scfurl/pacbiowdlR")
 ```
 
 Once installed, you can load the package and create a CNA plot using a single function call:
@@ -51,12 +51,7 @@ cna_calls <- system.file("extdata", "examples/K562.GRCh38.hificnv.vcf.gz", packa
 CNAPlot(
   depth_bigwig_file  = depth_file,
   variant_file       = cna_calls,
-  txdb               = TxDb.Hsapiens.UCSC.hg38.knownGene,
   method             = "fit",
-  downsample         = 0.1,
-  samplename         = "K562",
-  max_value          = 3.5,
-  min_value          = -3.5
 )
 ```
 

@@ -1,5 +1,5 @@
 ---
-title: "Plotting DNA Fusions"
+title: "Analyzing, Annotating, and Plotting DNA Fusions"
 author: "Scott Furlan"
 date: "`r Sys.Date()`"
 output: 
@@ -9,7 +9,7 @@ output:
 params:
   EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
 vignette: >
-  %\VignetteIndexEntry{Plotting DNA Fusions}
+  %\VignetteIndexEntry{Analyzing, Annotating, and Plotting DNA Fusions}
   %\VignetteEncoding{UTF-8}
   %\VignetteEngine{knitr::rmarkdown}
 alias: dna_fusions
@@ -17,7 +17,7 @@ editor_options:
   chunk_output_type: console
 ---
 
-```{r, child="children/SETTINGS-knitr_long.txt"}
+```{r, child="children/SETTINGS-knitr_fusions.txt"}
 ```
 
 
@@ -52,7 +52,7 @@ Okay, that is a seemingly overwhelming number of gene-gene fusions...  We can fi
 db_fusions <- get_neosplice_db()
 
 results <- find_related_fusions(fusions, db_fusions)
-hits <- as.numeric(unlist(which(lapply(results, function(f) length(f)>0))))
+hits <- as.numeric(which(sapply(results, function(f) length(f)>0)))
 fusions[hits,]
 print_fusion_matches(results[hits])
 

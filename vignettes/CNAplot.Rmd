@@ -157,3 +157,12 @@ CNA_plot_highlight(depth_bigwig_file  =   depth_file,
                   method = "delta", line_color = "black", chr_filter = "chr9", highlight_genes = c("CDKN2A", "CDKN2B"), 
                   samplename         = "K562", colors = chrom_palette)
 ```
+
+
+```{r}
+d <- CNA_plot(depth_bigwig_file  =   depth_file,
+  variant_file       =   cna_calls, method = "fit", 
+  samplename         = "K562", max_value = 3, min_value = -3, return_data = T)
+
+
+```

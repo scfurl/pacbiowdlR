@@ -1,0 +1,151 @@
+---
+title: "Interfacing with the PacBioWDL pipeline output"
+author: "Scott Furlan"
+date: "`r Sys.Date()`"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+params:
+  EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
+vignette: >
+  %\VignetteIndexEntry{Interfacing with the PacBioWDL pipeline output}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+alias: interfacing
+editor_options: 
+  chunk_output_type: console
+---
+
+# PacBio WDL Pipeline JSON Handling Guide
+
+## Overview
+
+The PacBio WDL (Workflow Description Language) pipeline generates a wealth of output files organized in a structured hierarchy. This guide explains how to use the `read_json_file()` function to easily access these outputs across different computing environments.
+
+## The Path Translation Problem
+
+When working with genomic pipelines in collaborative environments, file paths often need translation between:
+- Server paths (e.g., `/server/share/...`)
+- Local mounted drives (e.g., `/Volumes/...`)
+
+This creates challenges when configuration files contain absolute paths that need to be accessed from different systems.
+
+## Using `read_json_file()` Function
+
+The `read_json_file()` function solves this problem by reading JSON configuration files and automatically translating paths between environments.
+
+```r
+read_json_file <- function(file_path, sub1 = "/fh/working", sub2 = "/Volumes") {
+  # Check if file exists
+  if (!file.exists(file_path)) {
+    stop("File does not exist: ", file_path)
+  }
+  # Read and parse JSON
+  json_data <- fromJSON(file_path)
+  json_data_e <- lapply(json_data, function(loc) gsub(sub1, sub2, loc))
+  return(json_data_e)
+}
+```
+
+## Workflow Example
+
+### 1. Load the Output Configuration
+
+```r
+# Load output configuration from PacBio WDL pipeline
+data_K562 <- read_json_file("pacbio_outputs.json")
+```
+
+### 2. Access Specific Output Files
+
+```r
+# Access structural variant VCF file
+sv_vcf <- data_K562$humanwgs_singleton.phased_sv_vcf
+# [1] "/Volumes/furlan_s/sfurlan/pacbiorerun/pbWGS/K562/20250211_115553_humanwgs_singleton/out/phased_sv_vcf/K562.GRCh38.structural_variants.phased.vcf.gz"
+
+# Access small variant statistics
+small_var_stats <- data_K562$humanwgs_singleton.small_variant_stats
+# [1] "/Volumes/furlan_s/sfurlan/pacbiorerun/pbWGS/K562/20250211_115553_humanwgs_singleton/out/small_variant_stats/K562.GRCh38.small_variants.vcf.stats.txt"
+```
+
+## Available Output Types
+
+The PacBio WDL pipeline produces numerous output files organized by category:
+
+### Key File Categories
+
+| Category | Description | Example Output |
+|----------|-------------|----------------|
+| **Aligned Reads** | BAM files with mapped reads | `humanwgs_singleton.merged_haplotagged_bam` |
+| **Small Variants** | SNVs and small indels | `humanwgs_singleton.phased_small_variant_vcf` |
+| **Structural Variants** | Large genomic rearrangements | `humanwgs_singleton.phased_sv_vcf` |
+| **Copy Number Variants** | Deletions and duplications | `humanwgs_singleton.cnv_vcf` |
+| **Methylation Data** | CpG methylation patterns | `humanwgs_singleton.cpg_combined_bed` |
+| **Tandem Repeats** | Repeat expansions | `humanwgs_singleton.phased_trgt_vcf` |
+| **Phasing Information** | Haplotype assignments | `humanwgs_singleton.phase_blocks` |
+| **Quality Metrics** | Various QC statistics | `humanwgs_singleton.read_length_plot` |
+
+### Key Statistics
+
+The JSON also contains pre-computed statistics:
+
+```r
+# Basic sequencing stats
+total_reads <- data_K562$humanwgs_singleton.stat_num_reads                # [1] "5039572"
+mapped_percent <- data_K562$humanwgs_singleton.stat_mapped_percent        # [1] "99.98"
+mean_depth <- data_K562$humanwgs_singleton.stat_mean_depth                # [1] "33.38"
+
+# Variant statistics  
+snv_count <- data_K562$humanwgs_singleton.stat_small_variant_SNV_count    # [1] "3535236"
+indel_count <- data_K562$humanwgs_singleton.stat_small_variant_INDEL_count # [1] "701026"
+sv_del_count <- data_K562$humanwgs_singleton.stat_sv_DEL_count           # [1] "9106"
+```
+
+## Tips for Working with PacBio WDL Outputs
+
+1. **Custom Path Mapping**: Customize the `sub1` and `sub2` parameters based on your specific environment
+   ```r
+   # For different mount points
+   data_K562 <- read_json_file("pacbio_outputs.json", sub1 = "/data/projects", sub2 = "/mnt/data")
+   ```
+
+2. **File Existence Check**: Always verify file existence before attempting to read
+   ```r
+   sv_vcf_path <- data_K562$humanwgs_singleton.phased_sv_vcf
+   if (file.exists(sv_vcf_path)) {
+     # Process file
+   } else {
+     warning("SV VCF file not found at expected location")
+   }
+   ```
+
+3. **Working with Tabix-Indexed Files**: Many output files are compressed and indexed
+   ```r
+   library(Rsamtools)
+   # Access indexed VCF
+   vcf <- data_K562$humanwgs_singleton.phased_small_variant_vcf
+   vcf_index <- data_K562$humanwgs_singleton.phased_small_variant_vcf_index
+   # Use with appropriate packages for indexed access
+   ```
+
+## Example Analysis Workflow
+
+```r
+# 1. Load configuration
+data_K562 <- read_json_file("pacbio_outputs.json")
+
+# 2. Read structural variants
+library(VariantAnnotation)
+sv_vcf <- readVcf(data_K562$humanwgs_singleton.phased_sv_vcf)
+
+# 3. Filter for specific SV types
+sv_dels <- sv_vcf[info(sv_vcf)$SVTYPE == "DEL"]
+
+# 4. Access methylation data
+library(rtracklayer)
+methylation <- import(data_K562$humanwgs_singleton.cpg_combined_bed)
+
+```
+
+This structured approach allows you to efficiently access and analyze the comprehensive genomic data produced by the PacBio WDL pipeline while handling the path translation issues seamlessly.

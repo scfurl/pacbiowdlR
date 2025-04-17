@@ -1,0 +1,33 @@
+---
+title: "Visualizing Smaller Variants"
+author: "Scott Furlan"
+date: "`r Sys.Date()`"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+params:
+  EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
+vignette: >
+  %\VignetteIndexEntry{Visualizing Smaller Variants}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+alias: annotating_variants
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, child="children/SETTINGS-knitr_long.txt"}
+```
+
+## Plotting SnpEff Variants
+
+Plotting the number of variants by annotation category.  One needs to first annotate carients using SnpEff.  This may take a while.
+
+```{r, eval=FALSE}
+library(pacbiowdlR)
+variantsfile <- "location/small_variants.ann.txt.gz"
+plot_snpEff(variantsfile, cores = 16)
+```
+
+![](../man/figures/variants.png){width=100%}

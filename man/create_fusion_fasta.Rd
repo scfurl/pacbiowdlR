@@ -7,7 +7,8 @@
 create_fusion_fasta(
   fusion_df,
   file_path = "fusion_sequences.fasta",
-  include_genes = TRUE
+  include_genes = TRUE,
+  verbose = F
 )
 }
 \arguments{
@@ -17,6 +18,8 @@ fusion_sequence column (output from get_fusion_sequences function).}
 \item{file_path}{Character string specifying the output file path. Default is "fusion_sequences.fasta".}
 
 \item{include_genes}{Logical indicating whether to include gene names in the FASTA headers. Default is TRUE.}
+
+\item{verbose}{Logical. if \code{TRUE}, will provide messaging.}
 }
 \value{
 None, writes FASTA file to disk.

@@ -15,6 +15,7 @@ get_fusions_from_vcf(
   plot = FALSE,
   filter = c("pass", "fully_spanned", "has_strand"),
   annotate = FALSE,
+  verbose = F,
   tss_upstream = 2000,
   tss_downstream = 200
 )
@@ -39,6 +40,8 @@ get_fusions_from_vcf(
 \item{filter}{Character vector. Filtering criteria; supported values include \code{"pass"}, \code{"fully_spanned"}, \code{"protein_coding"}, and \code{"has_strand"}.}
 
 \item{annotate}{Logical. If \code{TRUE}, fusion breakpoints will be annotated using gene coordinates (default: \code{FALSE}).}
+
+\item{verbose}{Logical. if \code{TRUE}, will provide messaging.}
 
 \item{tss_upstream}{Numeric. Number of base pairs upstream of the transcription start site (default: \code{2000}).}
 

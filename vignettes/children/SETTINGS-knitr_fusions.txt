@@ -4,8 +4,8 @@ library("pacbiowdlR")
 knitr::opts_chunk$set(
   dev = "png",
   dpi = 300,
-  fig.asp = 0.8,
-  fig.width = 6,
+  fig.asp = 0.25,
+  fig.width = 15,
   out.width = "100%",
   fig.align = "center",
   comment = NA,

@@ -15,7 +15,7 @@
 #' @param tss_downstream Numeric; bases downstream of TSS to include in promoter (default: 200).
 #' @param cache_gtf Logical; whether to cache the GTF data between calls (default: TRUE).
 #' @param include_exon_info Logical; whether to compute canonical‑transcript exon numbers (default: FALSE).
-#'
+#' @param verbose Logical. if \code{TRUE}, will provide messaging.
 #' @return A data frame with annotation results for each coordinate. If `include_exon_info = TRUE`,
 #' extra columns `within_exon`, `fiveprime_exon`, and `threeprime_exon` are included.
 #' @export
@@ -31,7 +31,7 @@ annotate_genomic_coordinates <- function(
     coordinates, genome, gtffile,
     tss_upstream = 2000, tss_downstream = 200,
     cache_gtf = TRUE,
-    include_exon_info = TRUE
+    include_exon_info = TRUE, verbose = F
 ) {
   ## ---------------- Validations ---------------- ##
   stopifnot(is.data.frame(coordinates))
@@ -44,7 +44,7 @@ annotate_genomic_coordinates <- function(
   gtf_result <- load_cached_gtf(gtffile, force = !cache_gtf)
   if (include_exon_info && (is.null(gtf_result$canonical_exons_by_gene) ||
                             length(gtf_result$canonical_exons_by_gene) == 0)) {
-    message("[Cache rebuild] Canonical exon information missing; rebuilding cache…")
+    if(verbose){message("[Cache rebuild] Canonical exon information missing; rebuilding cache…")}
     gtf_result <- load_cached_gtf(gtffile, force = TRUE)
   }
   gtf_data  <- gtf_result$gtf_data
@@ -60,7 +60,7 @@ annotate_genomic_coordinates <- function(
     if (chr %in% seqlevels(genes))                     chr_mapping[chr] <- chr
     else if (sub("^chr", "", chr) %in% seqlevels(genes)) chr_mapping[chr] <- sub("^chr", "", chr)
     else if (paste0("chr", chr) %in% seqlevels(genes))    chr_mapping[chr] <- paste0("chr", chr)
-    else warning("Chromosome ", chr, " absent from GTF; skipping positions on this contig.")
+    else if(verbose){warning("Chromosome ", chr, " absent from GTF; skipping positions on this contig.")}
   }
 
   genes_by_chr <- lapply(seqlevels(genes), function(ch) genes[seqnames(genes) == ch])
@@ -89,7 +89,7 @@ annotate_genomic_coordinates <- function(
   )
 
   ## ---------------- Main loop ---------------- ##
-  message("Annotating ", n, " positions…")
+  if(verbose){message("Annotating ", n, " positions…")}
   for (i in seq_len(n)) {
     if (i %% 1000 == 0 || i == n) message("  processed ", i, "/", n)
     try({
@@ -230,7 +230,7 @@ annotate_genomic_coordinates <- function(
       }
     }, silent = TRUE)
   }
-  message("Annotation complete.")
+  if(verbose){message("Annotation complete.")}
   results
 }
 
@@ -238,16 +238,16 @@ annotate_genomic_coordinates <- function(
 #' Preload GTF data with proper symbol handling and canonical transcript tracking
 #' @export
 #' @keywords internal
-preload_gtf <- function(gtffile) {
+preload_gtf <- function(gtffile, verbose = F) {
   suppressPackageStartupMessages({ library(digest); library(rtracklayer); library(data.table); library(GenomicRanges) })
-  message("[GTF preload] ", basename(gtffile))
+  if(verbose){message("[GTF preload] ", basename(gtffile))}
   if (!exists("gtf_env", .GlobalEnv)) assign("gtf_env", new.env(), .GlobalEnv)
   env <- get("gtf_env", .GlobalEnv); key <- paste0("gtf_", digest(gtffile))
 
   ## Import GTF data
-  message("[Importing GTF] ", basename(gtffile))
+  if(verbose){message("[Importing GTF] ", basename(gtffile))}
   gtf <- import(gtffile, format="gtf")
-  message("[Processing Gene Level Data] ", basename(gtffile))
+  if(verbose){message("[Processing Gene Level Data] ", basename(gtffile))}
   keep <- gtf$type %in% c("gene","transcript","exon","five_prime_utr","three_prime_utr")
   gtf <- gtf[keep]
 
@@ -266,14 +266,14 @@ preload_gtf <- function(gtffile) {
   }
 
   ## Process transcript data
-  message("[Processing Transcript Level Data] ", basename(gtffile))
+  if(verbose){message("[Processing Transcript Level Data] ", basename(gtffile))}
   transcripts <- gtf[gtf$type == "transcript" & !is.na(gtf$gene_id)]
 
   # NEW: Store canonical transcript IDs by gene
   canon_tx_by_gene <- list()
 
   ## Process canonical transcript and exon data
-  message("[Processing Exon Level Data] ", basename(gtffile))
+  if(verbose){message("[Processing Exon Level Data] ", basename(gtffile))}
   canon_by_gene <- list()
 
   if (length(transcripts) > 0 && "transcript_id" %in% names(mcols(transcripts))) {
@@ -304,8 +304,7 @@ preload_gtf <- function(gtffile) {
   assign(paste0(key,"_canonical_exons"), canon_by_gene, envir=env)
   assign(paste0(key,"_canonical_tx"), canon_tx_by_gene, envir=env)
 
-  message("[GTF Preload Complete] ", basename(gtffile))
-  invisible(TRUE)
+  if(verbose){message("[GTF Preload Complete] ", basename(gtffile))}
 }
 
 #' Load cached GTF data or rebuild if needed

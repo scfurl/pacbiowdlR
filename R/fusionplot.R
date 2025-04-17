@@ -113,6 +113,7 @@ plot_fusions <- function(sv_data, highlight = NULL, annotate = FALSE, title = ""
 #' @param plot Logical. If \code{TRUE} a Circos plot will be generated (default: \code{FALSE}).
 #' @param filter Character vector. Filtering criteria; supported values include \code{"pass"}, \code{"fully_spanned"}, \code{"protein_coding"}, and \code{"has_strand"}.
 #' @param annotate Logical. If \code{TRUE}, fusion breakpoints will be annotated using gene coordinates (default: \code{FALSE}).
+#' @param verbose Logical. if \code{TRUE}, will provide messaging.
 #' @param tss_upstream Numeric. Number of base pairs upstream of the transcription start site (default: \code{2000}).
 #' @param tss_downstream Numeric. Number of base pairs downstream of the transcription start site (default: \code{200}).
 #'
@@ -128,7 +129,7 @@ get_fusions_from_vcf <- function(vcf_file, gtf_file = NULL, genome = "hg38",
                                  allowed = paste0("chr", c(1:22)),
                                  highlight = NULL, plot = FALSE,
                                  filter = c("pass", "fully_spanned", "has_strand"),
-                                 annotate = FALSE,
+                                 annotate = FALSE, verbose = F,
                                  tss_upstream = 2000, tss_downstream = 200) {
 
   # If annotation is requested, preload the GTF file
@@ -138,7 +139,7 @@ get_fusions_from_vcf <- function(vcf_file, gtf_file = NULL, genome = "hg38",
   }
 
   # Read VCF file
-  message("Reading VCF file...")
+  if(verbose){message("Reading VCF file...")}
   vcf <- readVcf(vcf_file, genome = genome)
   vcf <- vcf[vcf@info$SVTYPE=="BND",]
   if("pass" %in% filter){
@@ -152,7 +153,7 @@ get_fusions_from_vcf <- function(vcf_file, gtf_file = NULL, genome = "hg38",
   }
   vcf <- vcf[vcf@assays@data$DP[,1]>thresh,]
 
-  message("Processing structural variants...")
+  if(verbose){message("Processing structural variants...")}
   dat <- gsub("pbsv.BND.", "", as.character(VariantAnnotation::info(vcf)$MATEID))
   parts <- strsplit(dat, "-")
   sv_data <- do.call(rbind, parts)
@@ -176,7 +177,7 @@ get_fusions_from_vcf <- function(vcf_file, gtf_file = NULL, genome = "hg38",
 
   # Annotate the fusion breakpoints if requested
   if (annotate) {
-    message("Annotating fusion breakpoints...")
+    if(verbose){message("Annotating fusion breakpoints...")}
     # Prepare coordinates for annotation
     coord_df <- data.frame(
       id = 1:(nrow(sv_data) * 2),
@@ -253,7 +254,7 @@ get_fusions_from_vcf <- function(vcf_file, gtf_file = NULL, genome = "hg38",
   if (!plot) {
     return(sv_data)
   } else {
-    message("Generating Circos plot...")
+    if(verbose){message("Generating Circos plot...")}
 
     # Prepare highlight entries if specified
     if (!is.null(highlight)) {
@@ -384,7 +385,7 @@ print_fusion_columns <- function(fusion_list) {
 #'   \code{gene1_exonnumber}, \code{gene2_exonnumber}, and \code{fusion_id}.
 #' @param max_results      Integer.  Maximum number of highest‑scoring database
 #'   fusions returned for each sequenced fusion (default \code{5}).
-#'
+#' @param verbose Logical. if \code{TRUE}, will provide messaging.
 #' @return A named list.  Each element corresponds to one row in
 #'   \code{sequenced_fusions} and contains up to \code{max_results} sub‑lists,
 #'   each with:
@@ -420,12 +421,12 @@ print_fusion_columns <- function(fusion_list) {
 #' @keywords internal
 #' @export
 
-find_related_fusions <- function(sequenced_fusions, db_fusions, max_results = 5) {
+find_related_fusions <- function(sequenced_fusions, db_fusions, max_results = 5, verbose=F) {
   db_by_chr <- list()
   db_by_gene <- list()
 
   # Create lookup tables by chromosome pairs and gene pairs (in both orientations)
-  message("Pre-processing database fusions...")
+  if(verbose){message("Pre-processing database fusions...")}
   for (i in 1:nrow(db_fusions)) {
     chr1 <- db_fusions$gene1_chro[i]
     chr2 <- db_fusions$gene2_chro[i]
@@ -537,7 +538,7 @@ find_related_fusions <- function(sequenced_fusions, db_fusions, max_results = 5)
   names(results) <- as.character(1:nrow(sequenced_fusions))
 
   # Process sequenced fusions
-  message("Processing sequenced fusions...")
+  if(verbose){message("Processing sequenced fusions...")}
   for (idx in 1:nrow(sequenced_fusions)) {
     fusion <- sequenced_fusions[idx, ]
 
@@ -621,7 +622,46 @@ find_related_fusions <- function(sequenced_fusions, db_fusions, max_results = 5)
   return(results)
 }
 
-# Function to print results in a more readable format
+
+#' Print fusion matches in a readable format
+#'
+#' @description
+#' Formats and displays the results from the fusion matching function in a human-readable
+#' summary format, showing all matches found for each fusion.
+#'
+#' @param results A list of fusion match results, as returned by \code{find_related_fusions()}.
+#'   Each element corresponds to a sequenced fusion and contains nested lists of matched
+#'   database fusions with scores and details.
+#'
+#' @return Invisibly returns NULL. As a side effect, prints formatted match results
+#'   to the console.
+#'
+#' @details
+#' For each sequenced fusion, this function prints:
+#' \itemize{
+#'   \item A header showing the fusion index and match count
+#'   \item No matches found message (if applicable)
+#'   \item For each match: index, fusion ID, score, and gene/exon details
+#' }
+#'
+#' The function handles empty results and properly formats each match's details
+#' based on the structure provided by \code{find_related_fusions()}.
+#'
+#' @examples
+#' \dontrun{
+#' # Find related fusions
+#' results <- find_related_fusions(sequenced_fusions, db_fusions)
+#'
+#' # Print matches in readable format
+#' print_fusion_matches(results)
+#'
+#' # Print matches for just one fusion
+#' print_fusion_matches(results[1])
+#' }
+#'
+#' @seealso \code{\link{find_related_fusions}} for generating the match results
+#'
+#' @export
 print_fusion_matches <- function(results) {
   cat("Fusion Matches Summary:\n")
   cat("=======================\n\n")
@@ -651,13 +691,13 @@ print_fusion_matches <- function(results) {
 #'
 #' @param db_file Character or \code{NULL}. Optional file path to the NeoSplice database file.
 #' @param force_reload Logical. If \code{TRUE}, forces reloading of the database even if cached (default: \code{FALSE}).
-#'
+#' @param verbose Logical. if \code{TRUE}, will provide messaging.
 #' @return A data frame containing the NeoSplice fusion database entries.
 #'
 #' @importFrom digest digest
 #' @keywords internal
 get_neosplice_db <- function(db_file = system.file("extdata", "fusions/NeoSplice_hg38_inframe_fusion.txt.gz",
-                                                   package = "pacbiowdlR"), force_reload = FALSE) {
+                                                   package = "pacbiowdlR"), force_reload = FALSE, verbose=F) {
   db_key <- "neosplice_db"
 
   # Use custom database if provided
@@ -677,7 +717,7 @@ get_neosplice_db <- function(db_file = system.file("extdata", "fusions/NeoSplice
     return(get(db_key, envir = .fusion_pkg_env))
   }
 
-  message("Loading NeoSplice database...")
+  if(verbose){message("Loading NeoSplice database...")}
   db <- parse_neosplice_database(db_file)
 
   # Cache the database
@@ -693,6 +733,7 @@ get_neosplice_db <- function(db_file = system.file("extdata", "fusions/NeoSplice
 #' This function correctly handles the column naming and format specific to NeoSplice.
 #'
 #' @param file_path Path to the fusion database file (can be gzipped, with .gz extension)
+#' @param verbose Logical. if \code{TRUE}, will provide messaging.
 #' @return A data frame with standardized fusion database information
 #' @export
 #' @examples
@@ -701,7 +742,7 @@ get_neosplice_db <- function(db_file = system.file("extdata", "fusions/NeoSplice
 #' @keywords internal
 #' # Examine the first few rows
 #' head(db_fusions)
-parse_neosplice_database <- function(file_path) {
+parse_neosplice_database <- function(file_path, verbose=F) {
   # Check if file exists
   if (!file.exists(file_path)) {
     stop("File does not exist: ", file_path)
@@ -779,7 +820,7 @@ parse_neosplice_database <- function(file_path) {
 
     return(db)
   }, error = function(e) {
-    message("Error parsing NeoSplice database: ", e$message)
+    if(verbose){message("Error parsing NeoSplice database: ", e$message)}
 
     # Try simpler approach for troubleshooting
     if (is_gzipped) {
@@ -793,10 +834,10 @@ parse_neosplice_database <- function(file_path) {
       sample_lines <- lines[2:min(6, length(lines))]
     }
 
-    message("Header: ", header)
-    message("Sample lines: ")
+    if(verbose){message("Header: ", header)}
+    if(verbose){message("Sample lines: ")}
     for (line in sample_lines) {
-      message(line)
+      if(verbose){message(line)}
     }
 
     stop("Failed to parse NeoSplice database", call. = FALSE)
@@ -823,7 +864,7 @@ parse_neosplice_database <- function(file_path) {
 #'   }
 #' @param n_bp Integer specifying the number of base pairs to extract from each side
 #'   of the fusion. Default is 100bp.
-#'
+#' @param verbose Logical. if \code{TRUE}, will provide messaging.
 #' @return The original data frame with an additional column 'fusion_sequence' containing
 #'   the predicted fusion sequences.
 #'
@@ -860,7 +901,7 @@ parse_neosplice_database <- function(file_path) {
 #' @importFrom dplyr %>%
 #' @keywords internal
 #' @export
-get_fusion_sequences <- function(fusion_df, n_bp = 100) {
+get_fusion_sequences <- function(fusion_df, n_bp = 100, verbose=F) {
   # Check for required columns
   required_cols <- c("chr1", "chr2", "start1", "start2", "bp1_gene_strand", "bp2_gene_strand")
   missing_cols <- setdiff(required_cols, colnames(fusion_df))
@@ -887,11 +928,11 @@ get_fusion_sequences <- function(fusion_df, n_bp = 100) {
     # Determine sequence extraction coordinates based on strand
     # Handle first breakpoint strand (default to "+" if NA)
     if (is.na(strand1)) {
-      warning(paste("Row", i, "has NA in bp1_gene_strand. Defaulting to '+' strand."))
-      strand1 <- "+"
+      if(verbose){warning(paste("Row", i, "has NA in bp1_gene_strand. Defaulting to '*' strand."))}
+      strand1 <- "*"
     }
 
-    if (strand1 == "+") {
+    if (strand1 == "-") {
       # For + strand, take downstream of breakpoint
       range1 <- GRanges(seqnames = chr1,
                         ranges = IRanges(start = start1, end = start1 + n_bp - 1),
@@ -901,27 +942,27 @@ get_fusion_sequences <- function(fusion_df, n_bp = 100) {
       # For - strand, take upstream of breakpoint, then reverse complement
       range1 <- GRanges(seqnames = chr1,
                         ranges = IRanges(start = start1 - n_bp + 1, end = start1),
-                        strand = "-")
+                        strand = "+")
       seq1 <- as.character(getSeq(genome, range1))
     }
 
     # Handle second breakpoint strand (default to "+" if NA)
     if (is.na(strand2)) {
-      warning(paste("Row", i, "has NA in bp2_gene_strand. Defaulting to '+' strand."))
-      strand2 <- "+"
+      if(verbose){warning(paste("Row", i, "has NA in bp2_gene_strand. Defaulting to '*' strand."))}
+      strand2 <- "*"
     }
 
-    if (strand2 == "+") {
+    if (strand2 == "-") {
       # For + strand, take downstream of breakpoint
       range2 <- GRanges(seqnames = chr2,
                         ranges = IRanges(start = start2, end = start2 + n_bp - 1),
-                        strand = "+")
+                        strand = "-")
       seq2 <- as.character(getSeq(genome, range2))
     } else {
       # For - strand, take upstream of breakpoint, then reverse complement
       range2 <- GRanges(seqnames = chr2,
                         ranges = IRanges(start = start2 - n_bp + 1, end = start2),
-                        strand = "-")
+                        strand = "+")
       seq2 <- as.character(getSeq(genome, range2))
     }
 
@@ -944,7 +985,7 @@ get_fusion_sequences <- function(fusion_df, n_bp = 100) {
 #'   fusion_sequence column (output from get_fusion_sequences function).
 #' @param file_path Character string specifying the output file path. Default is "fusion_sequences.fasta".
 #' @param include_genes Logical indicating whether to include gene names in the FASTA headers. Default is TRUE.
-#'
+#' @param verbose Logical. if \code{TRUE}, will provide messaging.
 #' @return None, writes FASTA file to disk.
 #'
 #' @examples
@@ -957,7 +998,7 @@ get_fusion_sequences <- function(fusion_df, n_bp = 100) {
 #' }
 #' @keywords internal
 #' @export
-create_fusion_fasta <- function(fusion_df, file_path = "fusion_sequences.fasta", include_genes = TRUE) {
+create_fusion_fasta <- function(fusion_df, file_path = "fusion_sequences.fasta", include_genes = TRUE, verbose=F) {
   # Check if fusion_sequence column exists
   if (!("predicted_fusion_sequence" %in% colnames(fusion_df))) {
     stop("fusion_df must contain a 'fusion_sequence' column. Run get_fusion_sequences first.")
@@ -979,7 +1020,7 @@ create_fusion_fasta <- function(fusion_df, file_path = "fusion_sequences.fasta",
 
   # Write to file
   writeLines(fasta_lines, file_path)
-  message(paste("Created FASTA file:", file_path))
+  if(verbose){message(paste("Created FASTA file:", file_path))}
 }
 
 

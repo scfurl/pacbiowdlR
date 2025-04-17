@@ -7,19 +7,23 @@
 get_neosplice_db(
   db_file = system.file("extdata", "fusions/NeoSplice_hg38_inframe_fusion.txt.gz",
     package = "pacbiowdlR"),
-  force_reload = FALSE
+  force_reload = FALSE,
+  verbose = F
 )
 
 get_neosplice_db(
   db_file = system.file("extdata", "fusions/NeoSplice_hg38_inframe_fusion.txt.gz",
     package = "pacbiowdlR"),
-  force_reload = FALSE
+  force_reload = FALSE,
+  verbose = F
 )
 }
 \arguments{
 \item{db_file}{Character or \code{NULL}. Optional file path to the NeoSplice database file.}
 
 \item{force_reload}{Logical. If \code{TRUE}, forces reloading of the database even if cached (default: \code{FALSE}).}
+
+\item{verbose}{Logical. if \code{TRUE}, will provide messaging.}
 }
 \value{
 A data frame containing the NeoSplice fusion database

@@ -4,10 +4,12 @@
 \alias{parse_neosplice_database}
 \title{Parse NeoSplice fusion database}
 \usage{
-parse_neosplice_database(file_path)
+parse_neosplice_database(file_path, verbose = F)
 }
 \arguments{
 \item{file_path}{Path to the fusion database file (can be gzipped, with .gz extension)}
+
+\item{verbose}{Logical. if \code{TRUE}, will provide messaging.}
 }
 \value{
 A data frame with standardized fusion database information

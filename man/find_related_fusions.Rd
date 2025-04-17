@@ -4,7 +4,12 @@
 \alias{find_related_fusions}
 \title{Find Closest Related Fusions in a Reference Catalogue}
 \usage{
-find_related_fusions(sequenced_fusions, db_fusions, max_results = 5)
+find_related_fusions(
+  sequenced_fusions,
+  db_fusions,
+  max_results = 5,
+  verbose = F
+)
 }
 \arguments{
 \item{sequenced_fusions}{A \code{data.frame} (or \code{data.table}) produced
@@ -27,6 +32,8 @@ columns
 
 \item{max_results}{Integer.  Maximum number of highest‑scoring database
 fusions returned for each sequenced fusion (default \code{5}).}
+
+\item{verbose}{Logical. if \code{TRUE}, will provide messaging.}
 }
 \value{
 A named list.  Each element corresponds to one row in

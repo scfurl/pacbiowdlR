@@ -34,11 +34,12 @@ home:
 articles:
   - title: "Getting Started"
     desc: >
-      These vignettes provide an introduction to plotting DNA copy number alterations
-      using the **pacbiowdlR** package.
+      These vignettes provide an introduction to the **pacbiowdlR** package.
     contents:
+      - Interface
       - CNAplot
       - Fusionplot
+      - AnnotateVariants
 
 reference:
   - title: "Package Overview"
@@ -50,10 +51,13 @@ reference:
     desc: >
       Reference documentation for functions to create and customize CNA plots.
     contents:
+      - read_json_file
       - CNA_plot
       - CNA_plot_highlight
-      - fusion_plot
+      - plot_fusions
       - get_fusions_from_vcf
+      - plot_snpEff
+      - print_fusion_matches
       - generate_offsets
       - compute_weighted_log2_ratios
       - weighted_segment_log2
