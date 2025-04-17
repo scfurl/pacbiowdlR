@@ -98,7 +98,7 @@
                         <h4 data-toc-skip class="author">Scott
 Furlan</h4>
             
-            <h4 data-toc-skip class="date">2025-04-16</h4>
+            <h4 data-toc-skip class="date">2025-04-17</h4>
       
 
       <div class="hidden name"><code>CNAplot.Rmd</code></div>
@@ -275,6 +275,10 @@ contains the tumor suppressors CDKN2A, CDKN2B.</p>
 <span>                  method <span class="op">=</span> <span class="st">"delta"</span>, line_color <span class="op">=</span> <span class="st">"black"</span>, chr_filter <span class="op">=</span> <span class="st">"chr9"</span>, highlight_genes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CDKN2A"</span>, <span class="st">"CDKN2B"</span><span class="op">)</span>, </span>
 <span>                  samplename         <span class="op">=</span> <span class="st">"K562"</span>, colors <span class="op">=</span> <span class="va">chrom_palette</span><span class="op">)</span></span></code></pre></div>
 <p><img src="CNAplot_files/figure-html/unnamed-chunk-6-1.png" width="200%" style="display: block; margin: auto;"></p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CNA_plot.html">CNA_plot</a></span><span class="op">(</span>depth_bigwig_file  <span class="op">=</span>   <span class="va">depth_file</span>,</span>
+<span>  variant_file       <span class="op">=</span>   <span class="va">cna_calls</span>, method <span class="op">=</span> <span class="st">"fit"</span>, </span>
+<span>  samplename         <span class="op">=</span> <span class="st">"K562"</span>, max_value <span class="op">=</span> <span class="fl">3</span>, min_value <span class="op">=</span> <span class="op">-</span><span class="fl">3</span>, return_data <span class="op">=</span> <span class="cn">T</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
   </div>
