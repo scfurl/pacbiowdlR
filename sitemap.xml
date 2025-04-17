@@ -1,7 +1,9 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://scfurl.github.io/pacbiowdlR/404.html</loc></url>
+<url><loc>https://scfurl.github.io/pacbiowdlR/articles/AnnotateVariants.html</loc></url>
 <url><loc>https://scfurl.github.io/pacbiowdlR/articles/CNAplot.html</loc></url>
 <url><loc>https://scfurl.github.io/pacbiowdlR/articles/Fusionplot.html</loc></url>
+<url><loc>https://scfurl.github.io/pacbiowdlR/articles/Interface.html</loc></url>
 <url><loc>https://scfurl.github.io/pacbiowdlR/articles/index.html</loc></url>
 <url><loc>https://scfurl.github.io/pacbiowdlR/authors.html</loc></url>
 <url><loc>https://scfurl.github.io/pacbiowdlR/index.html</loc></url>
@@ -27,9 +29,11 @@
 <url><loc>https://scfurl.github.io/pacbiowdlR/reference/pacbiowdlR-package.html</loc></url>
 <url><loc>https://scfurl.github.io/pacbiowdlR/reference/parse_neosplice_database.html</loc></url>
 <url><loc>https://scfurl.github.io/pacbiowdlR/reference/plot_fusions.html</loc></url>
+<url><loc>https://scfurl.github.io/pacbiowdlR/reference/plot_snpEff.html</loc></url>
 <url><loc>https://scfurl.github.io/pacbiowdlR/reference/preload_gtf.html</loc></url>
 <url><loc>https://scfurl.github.io/pacbiowdlR/reference/print_fusion_columns.html</loc></url>
 <url><loc>https://scfurl.github.io/pacbiowdlR/reference/print_fusion_matches.html</loc></url>
+<url><loc>https://scfurl.github.io/pacbiowdlR/reference/read_json_file.html</loc></url>
 <url><loc>https://scfurl.github.io/pacbiowdlR/reference/recursiveIntersect.html</loc></url>
 <url><loc>https://scfurl.github.io/pacbiowdlR/reference/subset_cpg_by_GR_files.html</loc></url>
 <url><loc>https://scfurl.github.io/pacbiowdlR/reference/weighted_segment_log2.html</loc></url>
