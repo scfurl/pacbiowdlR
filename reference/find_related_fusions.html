@@ -77,7 +77,12 @@ breakpoint annotations, search a reference fusion database and return the
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">find_related_fusions</span><span class="op">(</span><span class="va">sequenced_fusions</span>, <span class="va">db_fusions</span>, max_results <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">find_related_fusions</span><span class="op">(</span></span>
+<span>  <span class="va">sequenced_fusions</span>,</span>
+<span>  <span class="va">db_fusions</span>,</span>
+<span>  max_results <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">F</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -107,6 +112,10 @@ columns</p><ul><li><p><code>chr1</code>, <code>chr2</code></p></li>
 <dt id="arg-max-results">max_results<a class="anchor" aria-label="anchor" href="#arg-max-results"></a></dt>
 <dd><p>Integer.  Maximum number of highest‑scoring database
 fusions returned for each sequenced fusion (default <code>5</code>).</p></dd>
+
+
+<dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
+<dd><p>Logical. if <code>TRUE</code>, will provide messaging.</p></dd>
 
 </dl></div>
     <div id="value">
@@ -160,7 +169,6 @@ matches are discarded.</p>
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># \donttest{</span></span></span>
 <span class="r-in"><span><span class="va">related</span> <span class="op">&lt;-</span> <span class="fu">find_related_fusions</span><span class="op">(</span><span class="va">sequenced_fusions</span>, <span class="va">db_fusions</span>, max_results <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Pre-processing database fusions...</span>
 <span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error:</span> object 'sequenced_fusions' not found</span>
 <span class="r-in"><span><span class="va">related</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>            <span class="co"># top matches for the first observed fusion</span></span></span>
 <span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error:</span> object 'related' not found</span>

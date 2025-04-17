@@ -80,13 +80,15 @@ otherwise, a default database (bundled with the package) is used.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">get_neosplice_db</span><span class="op">(</span></span>
 <span>  db_file <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"fusions/NeoSplice_hg38_inframe_fusion.txt.gz"</span>,</span>
 <span>    package <span class="op">=</span> <span class="st">"pacbiowdlR"</span><span class="op">)</span>,</span>
-<span>  force_reload <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  force_reload <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">F</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">get_neosplice_db</span><span class="op">(</span></span>
 <span>  db_file <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"fusions/NeoSplice_hg38_inframe_fusion.txt.gz"</span>,</span>
 <span>    package <span class="op">=</span> <span class="st">"pacbiowdlR"</span><span class="op">)</span>,</span>
-<span>  force_reload <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  force_reload <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">F</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -100,6 +102,10 @@ otherwise, a default database (bundled with the package) is used.</p>
 
 <dt id="arg-force-reload">force_reload<a class="anchor" aria-label="anchor" href="#arg-force-reload"></a></dt>
 <dd><p>Logical. If <code>TRUE</code>, forces reloading of the database even if cached (default: <code>FALSE</code>).</p></dd>
+
+
+<dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
+<dd><p>Logical. if <code>TRUE</code>, will provide messaging.</p></dd>
 
 </dl></div>
     <div id="value">

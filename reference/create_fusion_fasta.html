@@ -76,7 +76,8 @@
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">create_fusion_fasta</span><span class="op">(</span></span>
 <span>  <span class="va">fusion_df</span>,</span>
 <span>  file_path <span class="op">=</span> <span class="st">"fusion_sequences.fasta"</span>,</span>
-<span>  include_genes <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  include_genes <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">F</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -95,6 +96,10 @@ fusion_sequence column (output from get_fusion_sequences function).</p></dd>
 
 <dt id="arg-include-genes">include_genes<a class="anchor" aria-label="anchor" href="#arg-include-genes"></a></dt>
 <dd><p>Logical indicating whether to include gene names in the FASTA headers. Default is TRUE.</p></dd>
+
+
+<dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
+<dd><p>Logical. if <code>TRUE</code>, will provide messaging.</p></dd>
 
 </dl></div>
     <div id="value">

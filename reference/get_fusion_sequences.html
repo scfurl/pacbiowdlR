@@ -77,7 +77,7 @@ considers the strand orientation of each gene when extracting sequences.</p>
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">get_fusion_sequences</span><span class="op">(</span><span class="va">fusion_df</span>, n_bp <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">get_fusion_sequences</span><span class="op">(</span><span class="va">fusion_df</span>, n_bp <span class="op">=</span> <span class="fl">100</span>, verbose <span class="op">=</span> <span class="cn">F</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -97,6 +97,10 @@ considers the strand orientation of each gene when extracting sequences.</p>
 <dt id="arg-n-bp">n_bp<a class="anchor" aria-label="anchor" href="#arg-n-bp"></a></dt>
 <dd><p>Integer specifying the number of base pairs to extract from each side
 of the fusion. Default is 100bp.</p></dd>
+
+
+<dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
+<dd><p>Logical. if <code>TRUE</code>, will provide messaging.</p></dd>
 
 </dl></div>
     <div id="value">
