@@ -9,7 +9,7 @@
 <div style="text-align:left">
   <span>
     <a href="https://github.com/scfurl/pacbiowdlR">
-      <img src="man/figures/logo.png" width = 200/>
+      <img src="man/figures/logo.png" width = 250/>
     </a>
   </span>
 </div>
@@ -70,7 +70,7 @@ For more detailed examples, check out the package vignettes online.
 
 ---
 
-Enjoy your analysis and please report any issues or suggestions on the [GitHub issues page](https://github.com/yourusername/pacbiowdlR/issues)! 
+Enjoy your analysis and please report any issues or suggestions on the [GitHub issues page](https://github.com/scfurl/pacbiowdlR/issues)! 
 
 Happy plotting!
 

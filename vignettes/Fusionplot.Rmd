@@ -1,0 +1,60 @@
+---
+title: "Plotting DNA Fusions"
+author: "Scott Furlan"
+date: "`r Sys.Date()`"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+params:
+  EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
+vignette: >
+  %\VignetteIndexEntry{Plotting DNA Fusions}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+alias: dna_fusions
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, child="children/SETTINGS-knitr_wide.txt"}
+```
+
+
+
+
+```{r, eval=TRUE}
+library(pacbiowdlR)
+sv_file  <- system.file("extdata", "examples/K562.GRCh38.structural_variants.phased.vcf.gz", package = "pacbiowdlR")
+
+fusions<-get_fusions_from_vcf(sv_file, plot = T, filter = "")
+```
+
+
+Wow, that is a lot of fusions.  Many of these may be artifact, but K562s are genomically complex to say the least.  Let's see if we can learn a little more about these events.  First, to properly annotate them we need to load a gtf file into memory.  This annotation uses the "canonical transcripts" for every gene, which is simply defined for these purposes as the longest transcript.  Note that for human genome, this can take up about 10GB in RAM and takes about 1-2 minutes. One can check the presence of a loaded gtf as shown.
+
+```{r, eval=TRUE}
+gtf <- "/Users/sfurlan/Library/CloudStorage/OneDrive-FredHutchCancerCenter/computation/refs/GTFs/gencode.v47.chr_patch_hapl_scaff.annotation.gtf"
+preload_gtf(gtf)
+exists("gtf_env", .GlobalEnv)
+```
+
+Then we can annotate the fusions  (dont worry the gtf is loaded and won't need to reload if the above steps worked):
+
+```{r, eval=TRUE}
+fusions <- get_fusions_from_vcf(sv_file, gtf_file = gtf, plot = T, annotate = T, filter = "")
+
+```
+
+Okay, that is a seemingly overwhelming number of gene-gene fusions...  We can filter the fusion calls to known fusions
+
+```{r, eval=TRUE}
+db_fusions <- get_neosplice_db()
+
+results <- find_related_fusions(fusions, db_fusions)
+hits <- which(lapply(results, function(f) length(f)>0) %>% unlist()) %>% as.numeric()
+fusions[hits,]
+print_fusion_matches(results[hits])
+
+fusions <- get_fusions_from_vcf(sv_file, gtf_file = gtf, plot = T, filter = "", highlight = hits)
+```

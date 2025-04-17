@@ -10,31 +10,35 @@ annotate_genomic_coordinates(
   gtffile,
   tss_upstream = 2000,
   tss_downstream = 200,
-  cache_gtf = TRUE
+  cache_gtf = TRUE,
+  include_exon_info = TRUE
 )
 }
 \arguments{
-\item{coordinates}{Data frame with 'chr' and 'pos' columns}
+\item{coordinates}{Data frame with columns `chr` and `pos`.}
 
-\item{genome}{Character. Genome build name (e.g., "hg38", "hg19", "mm10")}
+\item{genome}{Character; genome build name (e.g., `"hg38"`, `"hg19"`, `"mm10"`).}
 
-\item{gtffile}{Character. Path to the GTF annotation file}
+\item{gtffile}{Character; path to the GTF annotation file.}
 
-\item{tss_upstream}{Numeric. Bases upstream of TSS to define as promoter (default: 2000)}
+\item{tss_upstream}{Numeric; bases upstream of TSS to define as promoter (default: 2000).}
 
-\item{tss_downstream}{Numeric. Bases downstream of TSS to include in promoter (default: 200)}
+\item{tss_downstream}{Numeric; bases downstream of TSS to include in promoter (default: 200).}
 
-\item{cache_gtf}{Logical. Whether to cache the GTF data between calls (default: TRUE)}
+\item{cache_gtf}{Logical; whether to cache the GTF data between calls (default: TRUE).}
+
+\item{include_exon_info}{Logical; whether to compute canonical‑transcript exon numbers (default: FALSE).}
 }
 \value{
-Data frame with annotation results
+A data frame with annotation results for each coordinate. If `include_exon_info = TRUE`,
+extra columns `within_exon`, `fiveprime_exon`, and `threeprime_exon` are included.
 }
 \description{
-Improved function to annotate genomic coordinates based on a GTF file
-}
-\examples{
-# Annotate multiple positions
-coords <- data.frame(chr = c("chr1", "chr16"), pos = c(1000000, 4334103))
-results <- annotate_genomic_coordinates(coords, "hg38", "path/to/gencode.v38.annotation.gtf")
+Improved function to annotate genomic coordinates based on a GTF file,
+with optional canonical‑transcript exon numbering information.
+
+**Key speed‑ups**
+* Canonical transcript and exon information is now pre‑computed once in `preload_gtf()` and cached.
+* Robust checks ensure a non‑NULL `canonical_exons_by_gene` object; if unavailable, the cache is rebuilt.
 }
 \keyword{internal}
