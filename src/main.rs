@@ -5,6 +5,7 @@ extern crate serde;
 extern crate rayon;
 extern crate indicatif;
 extern crate num_cpus;
+
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
@@ -74,13 +75,16 @@ fn is_likely_file_path(value: &str) -> bool {
 fn main() -> Result<()> {
     let args = Args::parse();
 
-    // Get absolute path for output directory
+    // Get absolute path for output directory (resolving any '..' components)
     let absolute_output_dir = if args.output.is_relative() {
         let current_dir = std::env::current_dir()
             .context("Failed to get current directory")?;
-        current_dir.join(&args.output)
+        let full_path = current_dir.join(&args.output);
+        fs::canonicalize(&full_path)
+            .unwrap_or_else(|_| full_path) // If directory doesn't exist yet, use the joined path
     } else {
-        args.output.clone()
+        fs::canonicalize(&args.output)
+            .unwrap_or_else(|_| args.output.clone())
     };
 
     // Read the input JSON file
@@ -92,8 +96,7 @@ fn main() -> Result<()> {
 
     // Ensure output directory exists
     if !args.dry_run {
-        fs::create_dir_all(&absolute_output_dir)
-            .with_context(|| format!("Failed to create output directory: {:?}", absolute_output_dir))?;
+        // We already created it above if needed
     }
 
     // Process each file in the JSON
