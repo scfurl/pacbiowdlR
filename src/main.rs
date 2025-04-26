@@ -5,6 +5,7 @@ extern crate serde;
 extern crate rayon;
 extern crate indicatif;
 extern crate num_cpus;
+
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
@@ -74,6 +75,15 @@ fn is_likely_file_path(value: &str) -> bool {
 fn main() -> Result<()> {
     let args = Args::parse();
 
+    // Get absolute path for output directory
+    let absolute_output_dir = if args.output.is_relative() {
+        let current_dir = std::env::current_dir()
+            .context("Failed to get current directory")?;
+        current_dir.join(&args.output)
+    } else {
+        args.output.clone()
+    };
+
     // Read the input JSON file
     let json_content = fs::read_to_string(&args.input)
         .with_context(|| format!("Failed to read input file: {:?}", args.input))?;
@@ -83,8 +93,8 @@ fn main() -> Result<()> {
 
     // Ensure output directory exists
     if !args.dry_run {
-        fs::create_dir_all(&args.output)
-            .with_context(|| format!("Failed to create output directory: {:?}", args.output))?;
+        fs::create_dir_all(&absolute_output_dir)
+            .with_context(|| format!("Failed to create output directory: {:?}", absolute_output_dir))?;
     }
 
     // Process each file in the JSON
@@ -116,32 +126,24 @@ fn main() -> Result<()> {
                             }
                         };
                         
-                        // Construct destination path and make it absolute
+                        // Construct destination path
                         let file_name = real_path.file_name()
                             .ok_or_else(|| anyhow::anyhow!("Failed to get filename from: {:?}", real_path))?;
                         
-                        let destination_path = args.output.join(file_name);
+                        let destination_path = absolute_output_dir.join(file_name);
                         
-                        // Convert to absolute path for the JSON output
-                        let absolute_destination_path = if destination_path.is_relative() {
-                            std::env::current_dir()
-                                .context("Failed to get current directory")?
-                                .join(&destination_path)
-                        } else {
-                            destination_path.clone()
-                        };
-                        
-                        // Create file operation
+                        // Create file operation with the original destination path for display
+                        let display_destination = args.output.join(file_name);
                         let operation = FileOperation {
                             key: key.clone(),
                             source: real_path,
-                            destination: destination_path,
+                            destination: display_destination,
                         };
                         
                         file_operations.push(operation);
                         
-                        // Add to new JSON with updated absolute path
-                        new_json.insert(key, json!(absolute_destination_path.to_string_lossy().to_string()));
+                        // Add to new JSON with the absolute path
+                        new_json.insert(key, json!(destination_path.to_string_lossy().to_string()));
                     } else {
                         // Not a file path - preserve as-is
                         if args.dry_run {
@@ -194,8 +196,10 @@ fn main() -> Result<()> {
                 // Update progress bar message with current file
                 progress_bar.set_message(format!("Copying {}", op.key));
                 
-                if let Err(e) = fs::copy(&op.source, &op.destination) {
-                    let error_msg = format!("Failed to copy {:?} to {:?}: {}", op.source, op.destination, e);
+                // Use the absolute path for the actual copying
+                let absolute_destination = absolute_output_dir.join(op.source.file_name().unwrap());
+                if let Err(e) = fs::copy(&op.source, &absolute_destination) {
+                    let error_msg = format!("Failed to copy {:?} to {:?}: {}", op.source, absolute_destination, e);
                     errors.lock().unwrap().push(error_msg);
                 }
                 
@@ -216,7 +220,16 @@ fn main() -> Result<()> {
     }
 
     // Write new JSON file
-    let json_output_path = args.json.clone().unwrap_or_else(|| args.output.join("outputs.json"));
+    let json_output_path = args.json
+        .and_then(|path| {
+            if path.is_relative() {
+                let current_dir = std::env::current_dir().ok()?;
+                Some(current_dir.join(path))
+            } else {
+                Some(path)
+            }
+        })
+        .unwrap_or_else(|| absolute_output_dir.join("outputs.json"));
     
     if args.dry_run {
         println!("\nWould write new JSON to: {:?}", json_output_path);
