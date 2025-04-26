@@ -58,4 +58,3 @@ print_fusion_matches(results[hits])
 
 plot_fusions(fusions, annotate = T, highlight = hits)
 ```
-

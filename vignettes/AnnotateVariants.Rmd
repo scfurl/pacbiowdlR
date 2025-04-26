@@ -22,7 +22,7 @@ editor_options:
 
 ## Plotting SnpEff Variants
 
-Plotting the number of variants by annotation category.  One needs to first annotate carients using SnpEff.  This may take a while.
+Plotting the number of variants by annotation category.  One needs to first annotate variants using SnpEff.  Generating this plot may take a while depending of the number of variants you have.
 
 ```{r, eval=FALSE}
 library(pacbiowdlR)

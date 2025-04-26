@@ -1,0 +1,157 @@
+---
+title: "Visualizing Smaller Variants"
+author: "Scott Furlan"
+date: "`r Sys.Date()`"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+params:
+  EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
+vignette: >
+  %\VignetteIndexEntry{Visualizing Smaller Variants}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+alias: annotating_variants
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, child="children/SETTINGS-knitr_long.txt"}
+```
+
+```{r}
+#' Diffusion Maps Implementation in R
+
+#' @param P A matrix with m features in rows and n samples in columns
+#' @param epsilon Kernel width parameter (default: 1)
+#' @param t Diffusion time parameter (default: 1)
+#' @param n_components Number of diffusion components to return (default: 2)
+#' @param alpha Parameter for anisotropic diffusion (default: 0)
+#' @param use_sparse Whether to use sparse matrices for large datasets (default: FALSE)
+#' @return A list containing the diffusion map coordinates and eigenvalues
+#' 
+diffusion_map <- function(P, epsilon = 1, t = 1, n_components = 2, alpha = 0, use_sparse = TRUE) {
+  # Transpose P if it's in the format m features x n samples to get n x m matrix
+  # This is because we need samples as rows for the diffusion calculation
+  P <- t(P)
+  
+  # Get dimensions
+  n <- nrow(P)
+  
+  # Compute pairwise distances using efficient matrix operations
+  message("Computing pairwise distances...")
+  # Calculate squared Euclidean distances efficiently using matrix operations
+  # ||x_i - x_j||^2 = ||x_i||^2 + ||x_j||^2 - 2<x_i,x_j>
+  
+  # Compute the squared norms of each row
+  P_squared_norms <- rowSums(P^2)
+  
+  # Compute the pairwise distances in one go
+  # This avoids the double for-loop which is very slow in R
+  dist_matrix <- outer(P_squared_norms, P_squared_norms, "+") - 2 * tcrossprod(P)
+  
+  # Fix potential numerical issues (small negative values due to floating point errors)
+  dist_matrix[dist_matrix < 0] <- 0
+  
+  # Construct the affinity matrix using Gaussian kernel
+  message("Constructing affinity matrix...")
+  W <- exp(-dist_matrix / epsilon)
+  
+  # Use sparse matrices for large datasets if requested
+  if (use_sparse && requireNamespace("Matrix", quietly = TRUE)) {
+    W <- Matrix::Matrix(W, sparse = TRUE)
+  }
+  
+  # Compute the diagonal degree matrix (or vector of diagonal elements)
+  D_diag <- rowSums(W)
+  
+  # For alpha-normalization (alpha controls the influence of density)
+  if (alpha > 0) {
+    # Normalize the kernel for alpha-normalization
+    D_alpha_diag <- D_diag^(-alpha)
+    W <- diag(D_alpha_diag) %*% W %*% diag(D_alpha_diag)
+    
+    # Recompute the degree matrix diagonal
+    D_diag <- rowSums(W)
+  }
+  
+  # Compute the normalized transition matrix P = D^(-1) * W
+  message("Computing normalized transition matrix...")
+  D_inv_diag <- 1/D_diag
+  
+  # For symmetric normalization, useful for eigendecomposition
+  D_half_inv_diag <- sqrt(D_inv_diag)
+  
+  # This is faster than full matrix multiplication with diagonal matrices
+  P_sym <- t(t(W * D_half_inv_diag) * D_half_inv_diag)
+  
+  # Eigendecomposition of the symmetric matrix
+  message("Computing eigendecomposition...")
+  # Use ARPACK for large matrices if available
+  if (n > 1000 && requireNamespace("RSpectra", quietly = TRUE)) {
+    # RSpectra is more efficient for large matrices and when we only need a few eigenvectors
+    n_eig <- min(n_components + 1, n - 1)
+    eig <- RSpectra::eigs_sym(P_sym, k = n_eig, which = "LM")
+    eigenvalues <- eig$values
+    eigenvectors <- eig$vectors
+  } else {
+    # Standard eigen for smaller matrices
+    eig <- eigen(P_sym, symmetric = TRUE)
+    # Sort eigenvalues in descending order
+    idx <- order(eig$values, decreasing = TRUE)
+    eigenvalues <- eig$values[idx]
+    eigenvectors <- eig$vectors[, idx]
+  }
+  
+  # Convert symmetric eigenvectors to right eigenvectors of the random walk
+  # Efficient way to multiply by diagonal matrix
+  phi <- sweep(eigenvectors, 1, D_half_inv_diag, "*")
+  
+  # Skip the first eigenvector (constant) and take the next n_components
+  n_components <- min(n_components, length(eigenvalues) - 1)
+  if (n_components < 1) {
+    stop("Not enough eigenvectors found. Try a different epsilon value.")
+  }
+  
+  # Compute the diffusion map embedding (raised to power t for diffusion time)
+  message("Computing diffusion map coordinates...")
+  # Multiply each eigenvector by the corresponding eigenvalue raised to power t
+  embedding <- sweep(phi[, 2:(n_components+1), drop=FALSE], 
+                     2, 
+                     eigenvalues[2:(n_components+1)]^t, 
+                     "*")
+  
+  # Create the transition matrix only if needed
+  P_transition <- diag(D_inv_diag) %*% W
+  
+  # Return the diffusion map coordinates and eigenvalues
+  return(list(
+    coordinates = embedding,
+    eigenvalues = eigenvalues[2:(n_components+1)],
+    eigenvectors = phi[, 2:(n_components+1)],
+    transition_matrix = P_transition
+  ))
+}
+
+```
+
+# load data
+```{r}
+library(Seurat)
+library(magrittr)
+seu <- "~/Fred Hutch Cancer Center/Furlan_Lab - General/experiments/patient_marrows/aggr/cds/indy/220831_WC1.RDS"
+seu <- readRDS(seu)
+DimPlot(seu)
+
+fv<-VariableFeatures(seu)
+P <- seu@assays$RNA@data[which(rownames(seu) %in% fv),]
+P <- t(seu@reductions$pca@cell.embeddings)
+dm <- diffusion_map(P, n_components = 2)
+
+coord<-dm$coordinates
+rownames(coord) <- Cells(seu)
+colnames(coord)<-paste0("DM", 1:2)
+seu$"DM" <- CreateDimReducObject(coord, key = "dm_", assay = "RNA")
+DimPlot(seu, reduction = "DM")
+```
