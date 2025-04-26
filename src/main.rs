@@ -2,12 +2,11 @@ extern crate clap;
 extern crate serde_json;
 extern crate anyhow;
 
-
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 use clap::Parser;
-use serde_json::Value;
+use serde_json::{Value, json};
 use anyhow::{Result, Context};
 
 /// A CLI tool to copy files from softlinks listed in a JSON file to a new location
@@ -38,6 +37,30 @@ struct FileOperation {
     destination: PathBuf,
 }
 
+fn is_likely_file_path(value: &str) -> bool {
+    // Check if the string looks like a file path
+    // Returns true if:
+    // 1. Starts with "/" (absolute path)
+    // 2. Contains a "/" (has directory structure)
+    // 3. Has a file extension (contains "." in the last component)
+    if value.starts_with('/') {
+        return true;
+    }
+    
+    if value.contains('/') {
+        return true;
+    }
+    
+    // Check for file extension in the last component
+    if let Some(last_component) = value.split('/').last() {
+        if last_component.contains('.') {
+            return true;
+        }
+    }
+    
+    false
+}
+
 fn main() -> Result<()> {
     let args = Args::parse();
 
@@ -60,30 +83,58 @@ fn main() -> Result<()> {
 
     if let Value::Object(map) = json_data {
         for (key, value) in map {
-            if let Value::String(file_path) = value {
-                let source_path = PathBuf::from(file_path);
-                
-                // Get the real path after following softlinks
-                let real_path = fs::canonicalize(&source_path)
-                    .with_context(|| format!("Failed to resolve path: {:?}", source_path))?;
-                
-                // Construct destination path
-                let file_name = real_path.file_name()
-                    .ok_or_else(|| anyhow::anyhow!("Failed to get filename from: {:?}", real_path))?;
-                
-                let destination_path = args.output.join(file_name);
-                
-                // Create file operation
-                let operation = FileOperation {
-                    key: key.clone(),
-                    source: real_path,
-                    destination: destination_path.clone(),
-                };
-                
-                file_operations.push(operation);
-                
-                // Add to new JSON with updated path
-                new_json.insert(key, destination_path.to_string_lossy().to_string());
+            match value {
+                Value::String(ref string_value) => {
+                    // Check if this string looks like a file path
+                    if is_likely_file_path(&string_value) {
+                        let source_path = PathBuf::from(&string_value);
+                        
+                        // Check if the path exists before trying to canonicalize
+                        if !source_path.exists() {
+                            eprintln!("Warning: Path does not exist for {}: {:?}", key, source_path);
+                            new_json.insert(key.clone(), value.clone());
+                            continue;
+                        }
+                        
+                        // Get the real path after following softlinks
+                        let real_path = match fs::canonicalize(&source_path) {
+                            Ok(path) => path,
+                            Err(e) => {
+                                eprintln!("Warning: Failed to resolve path for {}: {:?} - {}", key, source_path, e);
+                                new_json.insert(key.clone(), value.clone());
+                                continue;
+                            }
+                        };
+                        
+                        // Construct destination path
+                        let file_name = real_path.file_name()
+                            .ok_or_else(|| anyhow::anyhow!("Failed to get filename from: {:?}", real_path))?;
+                        
+                        let destination_path = args.output.join(file_name);
+                        
+                        // Create file operation
+                        let operation = FileOperation {
+                            key: key.clone(),
+                            source: real_path,
+                            destination: destination_path.clone(),
+                        };
+                        
+                        file_operations.push(operation);
+                        
+                        // Add to new JSON with updated path
+                        new_json.insert(key, json!(destination_path.to_string_lossy().to_string()));
+                    } else {
+                        // Not a file path - preserve as-is
+                        if args.dry_run {
+                            println!("Preserving non-path value for {}: {}", key, string_value);
+                        }
+                        new_json.insert(key.clone(), value.clone());
+                    }
+                },
+                _ => {
+                    // Preserve non-string values as-is
+                    new_json.insert(key.clone(), value.clone());
+                }
             }
         }
     } else {
@@ -120,5 +171,11 @@ fn main() -> Result<()> {
     }
 
     println!("\nOperation completed successfully!");
+    if !file_operations.is_empty() {
+        println!("Copied {} files", file_operations.len());
+    } else {
+        println!("No files were copied (no valid file paths found)");
+    }
+    
     Ok(())
 }
