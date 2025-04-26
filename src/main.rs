@@ -5,7 +5,6 @@ extern crate serde;
 extern crate rayon;
 extern crate indicatif;
 extern crate num_cpus;
-
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
