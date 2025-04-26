@@ -5,10 +5,9 @@ extern crate serde;
 extern crate rayon;
 extern crate indicatif;
 extern crate num_cpus;
-
 use std::collections::HashMap;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use clap::Parser;
 use serde_json::{Value, json};
 use anyhow::{Result, Context};
@@ -72,19 +71,37 @@ fn is_likely_file_path(value: &str) -> bool {
     false
 }
 
+fn normalize_path(path: &Path) -> Result<PathBuf> {
+    let mut result = PathBuf::new();
+    
+    for component in path.components() {
+        match component {
+            std::path::Component::ParentDir => {
+                result.pop();
+            }
+            std::path::Component::CurDir => {
+                // do nothing
+            }
+            _ => {
+                result.push(component);
+            }
+        }
+    }
+    
+    Ok(result)
+}
+
 fn main() -> Result<()> {
     let args = Args::parse();
 
-    // Get absolute path for output directory (resolving any '..' components)
+    // Get absolute path for output directory
     let absolute_output_dir = if args.output.is_relative() {
         let current_dir = std::env::current_dir()
             .context("Failed to get current directory")?;
         let full_path = current_dir.join(&args.output);
-        fs::canonicalize(&full_path)
-            .unwrap_or_else(|_| full_path) // If directory doesn't exist yet, use the joined path
+        normalize_path(&full_path)?
     } else {
-        fs::canonicalize(&args.output)
-            .unwrap_or_else(|_| args.output.clone())
+        normalize_path(&args.output)?
     };
 
     // Read the input JSON file
@@ -96,7 +113,8 @@ fn main() -> Result<()> {
 
     // Ensure output directory exists
     if !args.dry_run {
-        // We already created it above if needed
+        fs::create_dir_all(&absolute_output_dir)
+            .with_context(|| format!("Failed to create output directory: {:?}", absolute_output_dir))?;
     }
 
     // Process each file in the JSON
@@ -221,17 +239,16 @@ fn main() -> Result<()> {
         }
     }
 
-    // Write new JSON file
-    let json_output_path = args.json
-        .and_then(|path| {
-            if path.is_relative() {
-                let current_dir = std::env::current_dir().ok()?;
-                Some(current_dir.join(path))
-            } else {
-                Some(path)
-            }
-        })
-        .unwrap_or_else(|| absolute_output_dir.join("outputs.json"));
+    // Determine the output JSON path and make it absolute
+    let json_output_path = match args.json {
+        Some(path) if path.is_relative() => {
+            let current_dir = std::env::current_dir()
+                .context("Failed to get current directory")?;
+            normalize_path(&current_dir.join(path))?
+        },
+        Some(path) => normalize_path(&path)?,
+        None => absolute_output_dir.join("outputs.json"),
+    };
     
     if args.dry_run {
         println!("\nWould write new JSON to: {:?}", json_output_path);
