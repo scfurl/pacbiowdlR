@@ -38,6 +38,10 @@ struct Args {
     /// Number of threads to use for copying (defaults to number of CPU cores)
     #[arg(short = 't', long)]
     threads: Option<usize>,
+
+    /// Move the haplotagged.bam file instead of copying it
+    #[arg(short = 'm', long)]
+    move_haplotagged_bam: bool,
 }
 
 #[derive(Debug)]
@@ -186,7 +190,12 @@ fn main() -> Result<()> {
     if args.dry_run {
         println!("Dry run - the following operations would be performed:");
         for op in &file_operations {
-            println!("  Copy {:?} to {:?}", op.source, op.destination);
+            let operation_type = if args.move_haplotagged_bam && op.key.contains("haplotagged_bam") {
+                "Move"
+            } else {
+                "Copy"
+            };
+            println!("  {} {:?} to {:?}", operation_type, op.source, op.destination);
         }
     } else {
         println!("Copying files...");
@@ -213,14 +222,29 @@ fn main() -> Result<()> {
         let errors: Mutex<Vec<String>> = Mutex::new(Vec::new());
         pool.install(|| {
             file_operations.par_iter().for_each(|op| {
-                // Update progress bar message with current file
-                progress_bar.set_message(format!("Copying {}", op.key));
+                // Determine if we should move or copy this file
+                let is_haplotagged_bam = op.key.contains("haplotagged_bam");
+                let should_move = args.move_haplotagged_bam && is_haplotagged_bam;
                 
-                // Use the absolute path for the actual copying
+                // Update progress bar message with current file and operation
+                let operation_msg = if should_move { "Moving" } else { "Copying" };
+                progress_bar.set_message(format!("{} {}", operation_msg, op.key));
+                
+                // Use the absolute path for the actual copying/moving
                 let absolute_destination = absolute_output_dir.join(op.source.file_name().unwrap());
-                if let Err(e) = fs::copy(&op.source, &absolute_destination) {
-                    let error_msg = format!("Failed to copy {:?} to {:?}: {}", op.source, absolute_destination, e);
-                    errors.lock().unwrap().push(error_msg);
+                
+                if should_move {
+                    // Move the file
+                    if let Err(e) = fs::rename(&op.source, &absolute_destination) {
+                        let error_msg = format!("Failed to move {:?} to {:?}: {}", op.source, absolute_destination, e);
+                        errors.lock().unwrap().push(error_msg);
+                    }
+                } else {
+                    // Copy the file
+                    if let Err(e) = fs::copy(&op.source, &absolute_destination) {
+                        let error_msg = format!("Failed to copy {:?} to {:?}: {}", op.source, absolute_destination, e);
+                        errors.lock().unwrap().push(error_msg);
+                    }
                 }
                 
                 progress_bar.inc(1);
