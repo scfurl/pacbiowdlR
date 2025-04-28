@@ -1,14 +1,47 @@
 extern crate rayon;
 extern crate flate2;
+extern crate clap;
+extern crate rust_htslib;
+extern crate thiserror;
+extern crate log;
+extern crate env_logger;
 
-use std::env;
-use std::fs::File;
-use std::io::{self, BufRead, BufReader, Write};
-use std::path::Path;
+// use std::fmt::Error;
+use std::path::PathBuf;
+use std::io::{self, Write, BufWriter};
+use clap::Parser;
 use rayon::prelude::*;
-use std::collections::BTreeMap;
-use flate2::read::GzDecoder;
-use std::process::{Command, Stdio};
+use rust_htslib::tbx::{Reader, Read};
+use rust_htslib::errors::Error as TbxError;
+use thiserror::Error;
+use log::{info, warn};
+
+/// CLI for merging -1.0 BED intervals from a Tabix-indexed BED file
+#[derive(Parser, Debug)]
+#[clap(author, version, about)]
+struct Args {
+    /// Tabix-indexed bgzipped BED file (.bed.gz)
+    #[clap(value_parser)]
+    input: PathBuf,
+
+    /// Output file to write merged BED entries
+    #[clap(value_parser)]
+    output: PathBuf,
+
+    /// Number of threads to use (default: all available)
+    #[clap(short, long, value_parser)]
+    threads: Option<usize>,
+}
+
+#[derive(Error, Debug)]
+enum CliError {
+    #[error("IO error: {0}")]
+    Io(#[from] io::Error),
+    #[error("Tabix error: {0}")]
+    Tbx(#[from] TbxError),
+    #[error("Parse error: {0}")]
+    Parse(String),
+}
 
 #[derive(Debug, Clone)]
 struct BedEntry {
@@ -18,257 +51,124 @@ struct BedEntry {
     value: f64,
 }
 
-fn main() -> io::Result<()> {
-    let args: Vec<String> = env::args().collect();
-    
-    if args.len() < 3 || args.len() > 4 {
-        eprintln!("Usage: {} <input_file> <output_file> [threads]", args[0]);
-        eprintln!("  input_file: can be plain text or gzipped (.gz extension)");
-        eprintln!("  threads: optional number of threads to use (default: use all available)");
-        std::process::exit(1);
+impl BedEntry {
+    fn new(chrom: String, start: u64, end: u64, value: f64) -> Self {
+        Self { chrom, start, end, value }
     }
-    
-    let input_file = &args[1];
-    let output_file = &args[2];
-    
-    // Check if input file exists
-    if !Path::new(input_file).exists() {
-        eprintln!("Error: Input file '{}' does not exist", input_file);
-        std::process::exit(1);
+}
+
+impl From<std::num::ParseIntError> for CliError {
+    fn from(e: std::num::ParseIntError) -> Self { CliError::Parse(e.to_string()) }
+}
+impl From<std::num::ParseFloatError> for CliError {
+    fn from(e: std::num::ParseFloatError) -> Self { CliError::Parse(e.to_string()) }
+}
+
+fn main() -> Result<(), CliError> {
+    env_logger::init();
+    let args = Args::parse();
+
+    // Configure Rayon thread pool
+    if let Some(n) = args.threads {
+        rayon::ThreadPoolBuilder::new()
+            .num_threads(n)
+            .build_global()
+            .expect("Failed to build thread pool");
     }
-    
-    // Configure thread pool if specified
-    if let Some(threads_str) = args.get(3) {
-        if let Ok(num_threads) = threads_str.parse::<usize>() {
-            rayon::ThreadPoolBuilder::new()
-                .num_threads(num_threads)
-                .build_global()
-                .expect("Failed to build thread pool");
-            println!("Using {} threads", num_threads);
-        } else {
-            eprintln!("Invalid thread count: {}", threads_str);
-            std::process::exit(1);
-        }
-    } else {
-        println!("Using {} threads (all available)", rayon::current_num_threads());
+    info!("Using {} threads", rayon::current_num_threads());
+
+    // Validate input file
+    if !args.input.exists() {
+        return Err(CliError::Io(io::Error::new(
+            io::ErrorKind::NotFound,
+            format!("Input file '{}' not found", args.input.display()),
+        )));
     }
-    
-    // Detect if input is gzipped
-    println!("Reading input file: {}", input_file);
-    let is_gzipped = Path::new(input_file).extension().map_or(false, |ext| ext == "gz");
-    if is_gzipped {
-        println!("Detected gzipped input file");
+    if args.input.extension().and_then(|s| s.to_str()) != Some("gz") {
+        warn!("Input file does not end with .gz");
     }
-    
-    // Try the gunzip+awk approach first
-    println!("Processing file with native commands...");
-    
-    let gunzip_cmd = if is_gzipped {
-        if cfg!(target_os = "macos") {
-            "gzcat"  // macOS uses gzcat
-        } else {
-            "zcat"   // Linux typically uses zcat
-        }
-    } else {
-        "cat"
-    };
-    
-    let output_cmd = Command::new("bash")
-        .arg("-c")
-        .arg(format!(
-            "{} \"{}\" | awk -F'\\t' '
-            # Skip header line
-            NR > 1 {{
-                # Only take rows where column 6 is -1.0 
-                # or any other non -1.0 value we want to keep
-                if ($6 == \"-1.0\") {{
-                    value = 0.0;
-                }} else {{
-                    value = $6;
-                }}
-                # Output the 4 columns we want
-                print $1\"\\t\"$2\"\\t\"$3\"\\t\"value;
-            }}' > \"{}\"", 
-            gunzip_cmd, input_file, output_file
-        ))
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::piped())
-        .spawn()?;
-    
-    let output = output_cmd.wait_with_output()?;
-    
-    if output.status.success() {
-        println!("Successfully processed file using native commands");
-        println!("Output written to: {}", output_file);
-        return Ok(());
-    } else {
-        // Print the error if the command failed
-        if !output.stderr.is_empty() {
-            eprintln!("Error from command: {}", String::from_utf8_lossy(&output.stderr));
-        }
-        
-        println!("Native command failed, trying Rust implementation...");
-    }
-    
-    // Fallback to Rust implementation if native commands failed
-    let mut entries = Vec::new();
-    let mut line_count = 0;
-    let mut is_header = true;  // Assume first line is header
-    
-    // Create appropriate reader based on file type
-    if is_gzipped {
-        let file = File::open(input_file)?;
-        let gz = GzDecoder::new(file);
-        let reader = BufReader::with_capacity(1024 * 1024, gz); // 1MB buffer
-        
-        for line in reader.lines() {
-            let line = match line {
-                Ok(line) => line,
-                Err(e) => {
-                    eprintln!("Error reading line: {}", e);
-                    continue;
-                }
-            };
-            
-            line_count += 1;
-            
-            if is_header {
-                is_header = false;
-                println!("Skipping header line: {}", line);
-                continue;
-            }
-            
-            if line_count % 1_000_000 == 0 {
-                println!("Read {} million lines...", line_count / 1_000_000);
-            }
-            
-            let fields: Vec<&str> = line.split('\t').collect();
-            if fields.len() >= 6 {
-                let chrom = fields[0].to_string();
-                let start = match fields[1].parse::<u64>() {
-                    Ok(val) => val,
-                    Err(_) => {
-                        eprintln!("Invalid start position in line {}: {}", line_count, fields[1]);
-                        continue;
-                    }
-                };
-                let end = match fields[2].parse::<u64>() {
-                    Ok(val) => val,
-                    Err(_) => {
-                        eprintln!("Invalid end position in line {}: {}", line_count, fields[2]);
-                        continue;
-                    }
-                };
-                let value = match fields[5].parse::<f64>() {
-                    Ok(val) => val,
-                    Err(_) => {
-                        eprintln!("Invalid value in line {}: {}", line_count, fields[5]);
-                        continue;
-                    }
-                };
-                
-                entries.push(BedEntry {
-                    chrom,
-                    start,
-                    end,
-                    value,
-                });
-            }
-        }
-    } else {
-        let file = File::open(input_file)?;
-        let reader = BufReader::new(file);
-        
-        for line in reader.lines() {
-            let line = line?;
-            line_count += 1;
-            
-            if is_header {
-                is_header = false;
-                println!("Skipping header line: {}", line);
-                continue;
-            }
-            
-            if line_count % 1_000_000 == 0 {
-                println!("Read {} million lines...", line_count / 1_000_000);
-            }
-            
-            let fields: Vec<&str> = line.split('\t').collect();
-            if fields.len() >= 6 {
-                entries.push(BedEntry {
-                    chrom: fields[0].to_string(),
-                    start: fields[1].parse::<u64>().unwrap_or(0),
-                    end: fields[2].parse::<u64>().unwrap_or(0),
-                    value: fields[5].parse::<f64>().unwrap_or(0.0),
-                });
-            }
-        }
-    }
-    
-    println!("Read {} lines total (excluding header)", line_count - 1);
-    println!("Parsed {} valid BED entries", entries.len());
-    
-    if entries.is_empty() {
-        eprintln!("Error: No valid entries parsed from the file");
-        std::process::exit(1);
-    }
-    
-    // Group entries by chromosome for parallel processing
-    let mut chrom_groups: BTreeMap<String, Vec<BedEntry>> = BTreeMap::new();
-    for entry in &entries {
-        chrom_groups.entry(entry.chrom.clone()).or_default().push(entry.clone());
-    }
-    
-    // Process each chromosome in parallel
-    let merged_groups: Vec<(String, Vec<BedEntry>)> = chrom_groups
+
+    // Extract sequence names
+    let tbx0 = Reader::from_path(&args.input)?;
+    let seqs: Vec<String> = tbx0.seqnames().into_iter().map(String::from).collect();
+    info!("Found {} sequences", seqs.len());
+
+    // Parallel fetch & merge per chromosome
+    let mut results: Vec<(String, Vec<BedEntry>)> = seqs
         .into_par_iter()
-        .map(|(chrom, mut entries)| {
-            // Sort entries by start position
-            entries.sort_by_key(|e| e.start);
-            
-            let mut merged = Vec::new();
-            if entries.is_empty() {
-                return (chrom, merged);
-            }
-            
-            let mut current = entries[0].clone();
-            
-            for next in entries.iter().skip(1) {
-                if current.end == next.start 
-                   && current.value == -1.0 
-                   && next.value == -1.0 {
-                    current.end = next.end;
-                } else {
-                    merged.push(current);
-                    current = next.clone();
-                }
-            }
-            merged.push(current);
-            
-            (chrom, merged)
+        .map(|chrom| {
+            let mut reader = Reader::from_path(&args.input)?;
+            // Convert chrom name to tid index
+            // let tid = reader.header()
+            //     .name2rid(chrom.as_bytes())
+            //     .ok_or_else(|| CliError::Parse(format!("Unknown contig: {}", chrom)))?;
+            let tid = match reader.tid(&chrom) {
+                Ok(tid) => tid,
+                Err(_) => panic!("Could not resolve {} to contig ID", chrom),
+            };
+            let merged = stream_merge_chrom(&mut reader, tid, &chrom)?;
+            info!("{}: merged {} entries", chrom, merged.len());
+            Ok::<(std::string::String, Vec<BedEntry>), CliError>((chrom, merged))
         })
+        .filter_map(Result::ok)
         .collect();
-    
-    // Write output sequentially (file writes can't be easily parallelized)
-    let mut output = File::create(output_file)?;
-    let mut total_merged = 0;
-    
-    // Sort chromosomes for consistent output
-    let mut sorted_groups = merged_groups;
-    sorted_groups.sort_by(|a, b| a.0.cmp(&b.0));
-    
-    for (_, entries) in sorted_groups {
-        for entry in entries {
-            let output_value = if entry.value == -1.0 { 0.0 } else { entry.value };
-            writeln!(output, "{}\t{}\t{}\t{}", 
-                     entry.chrom, entry.start, entry.end, output_value)?;
-            total_merged += 1;
+
+    // Sort for deterministic output
+    results.sort_by(|(a, _), (b, _)| a.cmp(b));
+
+    // Write merged output
+    let output = std::fs::File::create(&args.output)?;
+    let mut wtr = BufWriter::new(output);
+    let mut count = 0;
+    for (_chrom, entries) in results {
+        for e in entries {
+            let val = if (e.value - (-1.0)).abs() < f64::EPSILON { 0.0 } else { e.value };
+            writeln!(wtr, "{}\t{}\t{}\t{}", e.chrom, e.start, e.end, val)?;
+            count += 1;
         }
     }
-    
-    println!("Merged {} entries into {} entries", entries.len(), total_merged);
-    println!("Output written to: {}", output_file);
-    
+    info!("Wrote {} merged entries to {}", count, args.output.display());
+
     Ok(())
+}
+
+/// Fetch & merge -1.0 intervals for one chromosome by tid index
+fn stream_merge_chrom(
+    reader: &mut Reader,
+    tid: u64,
+    chrom: &str,
+) -> Result<Vec<BedEntry>, CliError> {
+    reader.fetch(tid as u64, 0, std::u64::MAX)?;
+    let mut merged = Vec::new();
+    let mut current: Option<BedEntry> = None;
+
+    for record in reader.records() {
+        let raw = record?;
+        // Split on tab byte
+        let fields: Vec<&[u8]> = raw.split(|&b| b == b'\t').collect();
+        if fields.len() < 6 { continue; }
+        let chrom_str = chrom.to_string();
+        let start: u64 = std::str::from_utf8(fields[1]).unwrap().parse()?;
+        let end: u64 = std::str::from_utf8(fields[2]).unwrap().parse()?;
+        let value: f64 = std::str::from_utf8(fields[5]).unwrap().parse()?;
+        let entry = BedEntry::new(chrom_str, start, end, value);
+
+        if let Some(mut cur) = current.take() {
+            if cur.end == entry.start && cur.value == -1.0 && entry.value == -1.0 {
+                cur.end = entry.end;
+                current = Some(cur);
+            } else {
+                merged.push(cur);
+                current = Some(entry);
+            }
+        } else {
+            current = Some(entry);
+        }
+    }
+
+
+    if let Some(cur) = current {
+        merged.push(cur);
+    }
+    Ok(merged)
 }

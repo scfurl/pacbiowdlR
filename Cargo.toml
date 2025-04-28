@@ -13,6 +13,10 @@ rayon = "1.10"
 num_cpus = "1.16"
 indicatif = { version = "0.17", features = ["rayon"] }
 flate2 = "1.0"
+rust-htslib = "0.44"
+thiserror = "1"
+log = "0.4"
+env_logger = "0.10"
 
 [[bin]]
 name = "shrink_fire_bed"
