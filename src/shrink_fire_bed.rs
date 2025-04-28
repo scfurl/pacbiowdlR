@@ -1,9 +1,13 @@
 extern crate rayon;
+extern crate flate2;
+
 use std::env;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, Write};
+use std::path::Path;
 use rayon::prelude::*;
 use std::collections::BTreeMap;
+use flate2::read::GzDecoder;
 
 #[derive(Debug, Clone)]
 struct BedEntry {
@@ -19,11 +23,31 @@ impl BedEntry {
     }
 }
 
+/// Reads lines from a file, automatically detecting gzip compression based on file extension
+fn read_lines<P: AsRef<Path>>(path: P) -> io::Result<Vec<String>> {
+    let file = File::open(&path)?;
+    let file_path = path.as_ref();
+    
+    if let Some(extension) = file_path.extension() {
+        if extension == "gz" {
+            // Handle gzipped file
+            let decoder = GzDecoder::new(file);
+            let reader = BufReader::new(decoder);
+            return reader.lines().collect();
+        }
+    }
+    
+    // Handle regular file
+    let reader = BufReader::new(file);
+    reader.lines().collect()
+}
+
 fn main() -> io::Result<()> {
     let args: Vec<String> = env::args().collect();
     
     if args.len() < 3 || args.len() > 4 {
         eprintln!("Usage: {} <input_file> <output_file> [threads]", args[0]);
+        eprintln!("  input_file: can be plain text or gzipped (.gz extension)");
         eprintln!("  threads: optional number of threads to use (default: use all available)");
         std::process::exit(1);
     }
@@ -47,10 +71,16 @@ fn main() -> io::Result<()> {
         println!("Using {} threads (all available)", rayon::current_num_threads());
     }
     
-    // Read the entire file into memory for parallel processing
-    let file = File::open(input_file)?;
-    let reader = BufReader::new(file);
-    let lines: Vec<String> = reader.lines().collect::<Result<_, _>>()?;
+    // Detect if input is gzipped and read lines accordingly
+    println!("Reading input file: {}", input_file);
+    let is_gzipped = Path::new(input_file).extension().map_or(false, |ext| ext == "gz");
+    if is_gzipped {
+        println!("Detected gzipped input file");
+    }
+    
+    // Read the input file lines
+    let lines = read_lines(input_file)?;
+    println!("Read {} lines from input file", lines.len());
     
     // Parse entries in parallel
     let entries: Vec<BedEntry> = lines
@@ -69,6 +99,8 @@ fn main() -> io::Result<()> {
             }
         })
         .collect();
+    
+    println!("Parsed {} valid BED entries", entries.len());
     
     // Group entries by chromosome for parallel processing
     let mut chrom_groups: BTreeMap<String, Vec<BedEntry>> = BTreeMap::new();
@@ -98,7 +130,6 @@ fn main() -> io::Result<()> {
                 } else {
                     merged.push(current);
                     current = next.clone();
-                    
                 }
             }
             merged.push(current);
@@ -126,5 +157,7 @@ fn main() -> io::Result<()> {
     }
     
     println!("Merged {} entries into {} entries", total_original, total_merged);
+    println!("Output written to: {}", output_file);
+    
     Ok(())
 }
