@@ -1,8 +1,11 @@
 [package]
 name = "pacbiowdlR"
 version = "0.1.0"
-description = "A CLI tool to copy files from softlinks listed in a JSON file to a new location"
+description = "A suite of tools for working with PacBio WDL files"
+edition = "2021"
+license = "MIT OR Apache-2.0"
 authors = ["Scott Furlan"]
+autobins = false
 
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }
@@ -17,6 +20,10 @@ rust-htslib = "0.44"
 thiserror = "1"
 log = "0.4"
 env_logger = "0.10"
+
+[[bin]]
+name = "copy_pbWDL"
+path = "src/copy_files.rs"
 
 [[bin]]
 name = "shrink_fire_bed"

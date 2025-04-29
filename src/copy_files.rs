@@ -17,7 +17,9 @@ use indicatif::{ProgressBar, ProgressStyle};
 
 /// A CLI tool to copy files from softlinks listed in a JSON file to a new location
 #[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
+#[command(name = "copy_pbWDL")]
+#[command(version = "0.1")]
+#[command(about = "Copy files from softlinks listed in a JSON file to a new location", long_about = "This tool reads a JSON file containing softlinks and copies the files to a specified output directory. It can also move the haplotagged.bam file if specified.")]
 struct Args {
     /// Input JSON file path
     #[arg(short, long)]
