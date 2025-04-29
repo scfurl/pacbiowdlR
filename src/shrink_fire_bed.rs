@@ -1,3 +1,4 @@
+
 extern crate rayon;
 extern crate flate2;
 extern crate clap;
@@ -6,17 +7,22 @@ extern crate thiserror;
 extern crate log;
 extern crate env_logger;
 
-// use std::fmt::Error;
-use std::path::PathBuf;
-use std::io::{self, Write, BufWriter};
+
+// src/main.rs
+
 use clap::Parser;
+use log::{info, warn};
 use rayon::prelude::*;
 use rust_htslib::tbx::{Reader, Read};
 use rust_htslib::errors::Error as TbxError;
+use std::collections::HashMap;
+use std::fs::File;
+use std::io::{self, BufRead, BufReader, Write, BufWriter};
+use std::path::PathBuf;
+use std::sync::Arc;
 use thiserror::Error;
-use log::{info, warn};
 
-/// CLI for merging -1.0 BED intervals from a Tabix-indexed BED file
+/// CLI for merging adjacent -1.0 BED intervals from a Tabix-indexed BED file
 #[derive(Parser, Debug)]
 #[clap(author, version, about)]
 struct Args {
@@ -28,14 +34,19 @@ struct Args {
     #[clap(value_parser)]
     output: PathBuf,
 
+    /// Chrom sizes file (tab-delimited: chrom, length)
+    #[clap(long, value_parser)]
+    chrom_sizes: PathBuf,
+
     /// Number of threads to use (default: all available)
     #[clap(short, long, value_parser)]
     threads: Option<usize>,
 }
 
+/// Unified CLI error type
 #[derive(Error, Debug)]
 enum CliError {
-    #[error("IO error: {0}")]
+    #[error("I/O error: {0}")]
     Io(#[from] io::Error),
     #[error("Tabix error: {0}")]
     Tbx(#[from] TbxError),
@@ -43,7 +54,9 @@ enum CliError {
     Parse(String),
 }
 
+/// Basic BED entry struct
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 struct BedEntry {
     chrom: String,
     start: u64,
@@ -65,95 +78,117 @@ impl From<std::num::ParseFloatError> for CliError {
 }
 
 fn main() -> Result<(), CliError> {
-    env_logger::init();
+    // Initialize logger at INFO level
+    env_logger::Builder::from_default_env()
+        .filter_level(log::LevelFilter::Info)
+        .init();
+
     let args = Args::parse();
 
-    // Configure Rayon thread pool
+    // Load chrom sizes (required)
+let file = File::open(&args.chrom_sizes)?;
+let reader = BufReader::new(file);
+let sizes_map: HashMap<String, u64> = reader.lines()
+    .map(|l| {
+        let line = l.map_err(CliError::Io)?;
+        let mut parts = line.split_whitespace();
+        let chrom = parts.next()
+            .ok_or_else(|| CliError::Parse("Missing chrom in sizes file".into()))?;
+        let len = parts.next()
+            .ok_or_else(|| CliError::Parse(format!("Missing length for {}", chrom)))?
+            .parse::<u64>()?;
+        Ok::<(std::string::String, u64), CliError>((chrom.to_string(), len))
+    })
+    .collect::<Result<_, _>>()?;
+let sizes = Arc::new(sizes_map);
+
+    // Check for accompanying .tbi index
+    let idx = format!("{}.tbi", args.input.display());
+    if !std::path::Path::new(&idx).exists() {
+        return Err(CliError::Io(io::Error::new(
+            io::ErrorKind::NotFound,
+            format!("Tabix index not found: {}", idx),
+        )));
+    }
+
+    // Configure Rayon threads
     if let Some(n) = args.threads {
         rayon::ThreadPoolBuilder::new()
             .num_threads(n)
             .build_global()
-            .expect("Failed to build thread pool");
+            .expect("Failed to set thread count");
     }
     info!("Using {} threads", rayon::current_num_threads());
 
-    // Validate input file
-    if !args.input.exists() {
-        return Err(CliError::Io(io::Error::new(
-            io::ErrorKind::NotFound,
-            format!("Input file '{}' not found", args.input.display()),
-        )));
-    }
-    if args.input.extension().and_then(|s| s.to_str()) != Some("gz") {
-        warn!("Input file does not end with .gz");
-    }
+    // Open reader and list contigs
+    let tbx = Reader::from_path(&args.input)?;
+    let contigs: Vec<String> = tbx.seqnames().into_iter().map(String::from).collect();
+    info!("Found {} contigs", contigs.len());
 
-    // Extract sequence names
-    let tbx0 = Reader::from_path(&args.input)?;
-    let seqs: Vec<String> = tbx0.seqnames().into_iter().map(String::from).collect();
-    info!("Found {} sequences", seqs.len());
-
-    // Parallel fetch & merge per chromosome
-    let mut results: Vec<(String, Vec<BedEntry>)> = seqs
+    // Process each contig in parallel
+    let mut results: Vec<(String, Vec<BedEntry>)> = contigs
         .into_par_iter()
-        .map(|chrom| {
-            let mut reader = Reader::from_path(&args.input)?;
-            // Convert chrom name to tid index
-            // let tid = reader.header()
-            //     .name2rid(chrom.as_bytes())
-            //     .ok_or_else(|| CliError::Parse(format!("Unknown contig: {}", chrom)))?;
-            let tid = match reader.tid(&chrom) {
-                Ok(tid) => tid,
-                Err(_) => panic!("Could not resolve {} to contig ID", chrom),
-            };
-            let merged = stream_merge_chrom(&mut reader, tid, &chrom)?;
-            info!("{}: merged {} entries", chrom, merged.len());
-            Ok::<(std::string::String, Vec<BedEntry>), CliError>((chrom, merged))
+        .filter_map(|chrom| {
+            // Determine fetch end position from sizes or default to MAX
+            let end_pos = sizes.get(&chrom).cloned().unwrap_or(std::u64::MAX);
+            // Open fresh reader
+            let merged_res: Result<Vec<BedEntry>, CliError> = Reader::from_path(&args.input)
+                .map_err(CliError::Tbx)
+                .and_then(|mut reader| {
+                    // Resolve rid for this contig
+                    let rid = reader
+                        .tid(&chrom)
+                        .map_err(|e| CliError::Tbx(e))?;
+                    // Fetch with correct end
+                    reader.fetch(rid, 0, end_pos)
+                        .map_err(CliError::Tbx)?;
+                    // Merge intervals
+                    merge_intervals(&mut reader, &chrom)
+                });
+
+            match merged_res {
+                Ok(merged) => {
+                    info!("{}: merged {} intervals", chrom, merged.len());
+                    Some((chrom, merged))
+                }
+                Err(e) => {
+                    warn!("Skipping {}: {}", chrom, e);
+                    None
+                }
+            }
         })
-        .filter_map(Result::ok)
         .collect();
 
     // Sort for deterministic output
     results.sort_by(|(a, _), (b, _)| a.cmp(b));
 
-    // Write merged output
-    let output = std::fs::File::create(&args.output)?;
-    let mut wtr = BufWriter::new(output);
-    let mut count = 0;
-    for (_chrom, entries) in results {
-        for e in entries {
-            let val = if (e.value - (-1.0)).abs() < f64::EPSILON { 0.0 } else { e.value };
-            writeln!(wtr, "{}\t{}\t{}\t{}", e.chrom, e.start, e.end, val)?;
-            count += 1;
+    // Write out merged intervals
+    let mut out = BufWriter::new(std::fs::File::create(&args.output)?);
+    let mut total = 0;
+    for (chrom, intervals) in results {
+        for iv in intervals {
+            let val = if (iv.value + 1.0).abs() < f64::EPSILON { 0.0 } else { iv.value };
+            writeln!(out, "{}\t{}\t{}\t{}", chrom, iv.start, iv.end, val)?;
+            total += 1;
         }
     }
-    info!("Wrote {} merged entries to {}", count, args.output.display());
-
+    info!("Wrote {} merged entries to {}", total, args.output.display());
     Ok(())
 }
 
-/// Fetch & merge -1.0 intervals for one chromosome by tid index
-fn stream_merge_chrom(
-    reader: &mut Reader,
-    tid: u64,
-    chrom: &str,
-) -> Result<Vec<BedEntry>, CliError> {
-    reader.fetch(tid as u64, 0, std::u64::MAX)?;
+/// Merge adjacent -1.0 intervals
+fn merge_intervals(reader: &mut Reader, chrom: &str) -> Result<Vec<BedEntry>, CliError> {
     let mut merged = Vec::new();
     let mut current: Option<BedEntry> = None;
-
-    for record in reader.records() {
-        let raw = record?;
-        // Split on tab byte
-        let fields: Vec<&[u8]> = raw.split(|&b| b == b'\t').collect();
-        if fields.len() < 6 { continue; }
-        let chrom_str = chrom.to_string();
-        let start: u64 = std::str::from_utf8(fields[1]).unwrap().parse()?;
-        let end: u64 = std::str::from_utf8(fields[2]).unwrap().parse()?;
-        let value: f64 = std::str::from_utf8(fields[5]).unwrap().parse()?;
-        let entry = BedEntry::new(chrom_str, start, end, value);
-
-        if let Some(mut cur) = current.take() {
+    for rec in reader.records() {
+        let raw = rec?;
+        let cols: Vec<&[u8]> = raw.split(|&b| b == b'\t').collect();
+        if cols.len() < 6 { continue; }
+        let start: u64 = std::str::from_utf8(cols[1]).unwrap().parse().unwrap();
+        let endp:  u64 = std::str::from_utf8(cols[2]).unwrap().parse().unwrap();
+        let value: f64 = std::str::from_utf8(cols[5]).unwrap().parse().unwrap();
+        let entry = BedEntry::new(chrom.to_string(), start, endp, value);
+        if let Some(mut cur) = current {
             if cur.end == entry.start && cur.value == -1.0 && entry.value == -1.0 {
                 cur.end = entry.end;
                 current = Some(cur);
@@ -165,10 +200,6 @@ fn stream_merge_chrom(
             current = Some(entry);
         }
     }
-
-
-    if let Some(cur) = current {
-        merged.push(cur);
-    }
+    if let Some(c) = current { merged.push(c); }
     Ok(merged)
 }
