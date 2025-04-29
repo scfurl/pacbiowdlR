@@ -158,11 +158,144 @@ CNA_plot_highlight(depth_bigwig_file  =   depth_file,
                   samplename         = "K562", colors = chrom_palette)
 ```
 
+Looking at allele frequencies.  The HifiCNV program also outputs
 
 ```{r}
-d <- CNA_plot(depth_bigwig_file  =   depth_file,
-  variant_file       =   cna_calls, method = "fit", 
-  samplename         = "K562", max_value = 3, min_value = -3, return_data = T)
+f<-"/Volumes/furlan_s/sfurlan/pacbiorerun/pbWGS/K562/20250211_115553_humanwgs_singleton/call-upstream/call-hificnv/work/K562.GRCh38.hificnv.maf.bw"
+f<-"/Volumes/furlan_s/sfurlan/250302_leuklong/pbWGS/LL1_S1/20250302_232026_humanwgs_singleton/call-upstream/call-hificnv/work/LL1_S1.GRCh38.hificnv.maf.bw"
+cna_calls <- "/Volumes/furlan_s/sfurlan/250302_leuklong/pbWGS/LL1_S1/20250302_232026_humanwgs_singleton/call-upstream/call-hificnv/work/LL1_S1.GRCh38.hificnv.vcf.gz"
+p2<-MAF_plot(f, variant_file = cna_calls, downsample = 1, chr_filter = "chr9", colors = chrom_palette)
+p1<-CNA_plot(depth_bigwig_file  =   depth_file, downsample = 1,
+                  variant_file       =   cna_calls, max_value = 5, min_value = -5,
+                  method = "fit", line_color = "black", chr_filter = "chr9",
+                  colors = chrom_palette)
+p1/p2
+
+library(patchwork)
+
+library(rtracklayer)
+library(GenomeInfoDb)
+library(data.table)
+library(dplyr)
+library(zoo)
+library(ggplot2)
+library(ggrepel)
+```
+
+```{r}
+MAF_plot <- function (maf_bigwig_file, variant_file, downsample = 0.03, 
+    point_size = 0.01, colors = NULL, 
+    max_value = NULL, min_value = NULL, min_variant_distance = 10000, jitter_y = 0.04,
+    samplename = "", chr_filter = NULL, trend_window = 50, variant_alpha = 0.1, 
+    trend_regions = "inside", exclude_xy = TRUE, return_data = FALSE) 
+{
+    
+    coverage_data <- import.bw(maf_bigwig_file)
+    coverage_data <- keepStandardChromosomes(coverage_data, pruning.mode = "tidy")
+    coverage_data <- as.data.frame(coverage_data)
+    valid_chromosomes <- paste0("chr", c(as.character(1:22), 
+        "X", "Y"))
+    if (exclude_xy) {
+        valid_chromosomes <- paste0("chr", as.character(1:22))
+    }
+    coverage_data <- coverage_data %>% filter(seqnames %in% valid_chromosomes)
+    if (!is.null(chr_filter)) {
+        coverage_data <- coverage_data %>% filter(seqnames == 
+            chr_filter)
+    }
+    set.seed(42)
+    sampled_indices <- sample(seq_len(nrow(coverage_data)), size = max(1, 
+        floor(nrow(coverage_data) * downsample)))
+    coverage_data <- coverage_data[sampled_indices, ]
+    coverage_data$delta_weighted <- coverage_data$score
+    vcf <- fread(variant_file, skip = "#CHROM")
+    colnames(vcf)[1] <- "CHROM"
+    vcf <- vcf %>% filter(CHROM %in% valid_chromosomes)
+    if (!is.null(chr_filter)) {
+        vcf <- vcf %>% filter(CHROM == chr_filter)
+    }
+    end_vals <- strsplit(vcf$INFO, ";") %>% sapply("[[", 3) %>% 
+        gsub("END=", "", .) %>% as.numeric()
+    type_vals <- strsplit(vcf$INFO, ";") %>% sapply("[[", 2) %>% 
+        gsub("SVTYPE=", "", .)
+    variant_calls <- data.frame(seqnames = vcf$CHROM, start = vcf$POS, 
+        end = end_vals, type = type_vals)
+    if (!is.null(min_variant_distance) && min_variant_distance > 
+        0) {
+        variant_calls <- variant_calls %>% mutate(distance = end - 
+            start) %>% filter(distance >= min_variant_distance)
+    }
+    offset <- generate_offsets(coverage_data, variant_calls)
+    variant_df <- offset$variant_calls
+    data_highlight <- data.frame()
+    if (nrow(variant_df) > 0) {
+        data_highlight <- data.frame(xmin = variant_df$cumulative_start, 
+            xmax = variant_df$cumulative_end, ymin = -Inf, ymax = Inf, 
+            VariantType = variant_df$type, seqnames = variant_df$seqnames, 
+            x_center = (variant_df$cumulative_start + variant_df$cumulative_end)/2)
+    }
+    offset$coverage_data <- offset$coverage_data %>% arrange(cumulative_genomic_position)
+    # if (!is.null(min_value)) {
+    #     offset$coverage_data$delta_weighted[offset$coverage_data$delta_weighted < 
+    #         min_value] <- min_value
+    # }
+    # if (!is.null(max_value)) {
+    #     offset$coverage_data$delta_weighted[offset$coverage_data$delta_weighted > 
+    #         max_value] <- max_value
+    # }
+    chromosome_boundaries <- offset$coverage_data %>% group_by(seqnames) %>% 
+        summarize(boundary = min(cumulative_genomic_position), 
+            .groups = "drop")
+    chromosome_midpoints <- offset$coverage_data %>% group_by(seqnames) %>% 
+        summarize(midpoint = mean(range(cumulative_genomic_position)), 
+            .groups = "drop")
+    if (is.null(colors)) {
+        chromosome_order <- c(as.character(1:22), "X", "Y")
+        if (exclude_xy) {
+            chromosome_order <- as.character(1:22)
+        }
+        colors <- rep(c("black", "gray"), length.out = length(chromosome_order))
+        names(colors) <- paste0("chr", chromosome_order)
+    }
+    p <- ggplot() + geom_jitter(data = offset$coverage_data, aes(x = cumulative_genomic_position, 
+        y = delta_weighted, color = seqnames), size = point_size, height=jitter_y) + 
+        scale_color_manual(values = colors, drop = FALSE) + {
+        if (nrow(data_highlight) > 0) {
+            geom_rect(data = data_highlight, aes(xmin = xmin, 
+                xmax = xmax, ymin = ymin, ymax = ymax, fill = VariantType), 
+                color = "transparent", alpha = variant_alpha)
+        }
+        else {
+            NULL
+        }
+    } + scale_fill_manual(values = c(DEL = "blue", DUP = "red"), 
+        na.value = "grey80") + geom_vline(data = chromosome_boundaries, 
+        aes(xintercept = boundary), color = "grey", linetype = "dashed", 
+        alpha = 0.6) + labs(title = paste0("CNA ", samplename), 
+        x = "Chromosome", y = "Coverage") + theme_minimal() + 
+        theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+            axis.ticks.x = element_blank(), panel.grid = element_blank()) + 
+        guides(color = "none") 
+    # + scale_y_continuous(limits = c(ifelse(is.null(min_value), 
+    #     min(offset$coverage_data$delta_weighted, na.rm = TRUE), 
+    #     min_value), ifelse(is.null(max_value), max(offset$coverage_data$delta_weighted, 
+    #     na.rm = TRUE), max_value))) + scale_x_continuous(breaks = chromosome_midpoints$midpoint, 
+    #     labels = chromosome_midpoints$seqnames)
+    if (return_data) {
+        return(list(plot = p, coverage_data = offset$coverage_data, 
+            variant_calls = offset$variant_calls))
+    }
+    else {
+        return(p)
+    }
+}
+
+```
+
+
+
+```{r}
+
 
 
 ```
