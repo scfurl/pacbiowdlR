@@ -32,3 +32,4 @@ path = "src/shrink_fire_bed.rs"
 [[bin]]
 name = "bedgraph_to_bw"
 path = "src/bgtobw.rs"
+
