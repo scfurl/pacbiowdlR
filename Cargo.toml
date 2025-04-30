@@ -20,6 +20,7 @@ rust-htslib = "0.44"
 thiserror = "1"
 log = "0.4"
 env_logger = "0.10"
+bio = "2.2.0"
 
 [[bin]]
 name = "copy_pbWDL"
@@ -36,3 +37,7 @@ path = "src/bgtobw.rs"
 [[bin]]
 name = "annotate_seq"
 path = "src/annotate_seq.rs"
+
+[[bin]]
+name = "motif_finder"
+path = "src/motif_finder.rs"
