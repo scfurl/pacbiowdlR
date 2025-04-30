@@ -33,3 +33,6 @@ path = "src/shrink_fire_bed.rs"
 name = "bedgraph_to_bw"
 path = "src/bgtobw.rs"
 
+[[bin]]
+name = "annotate_seq"
+path = "src/annotate_seq.rs"
