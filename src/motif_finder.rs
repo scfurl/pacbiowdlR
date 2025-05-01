@@ -105,7 +105,7 @@ fn main() -> io::Result<()> {
     }
 
     // Print header
-    println!("contig\tstrand\tstart\tend\trepeats\tsequence");
+    println!("#contig\tstart\tend\tname_sequence_len_mm\tscore\tstrand");
 
     // Channel for thread-safe output
     let (tx, rx) = mpsc::channel();
@@ -131,14 +131,12 @@ fn main() -> io::Result<()> {
             for (start, end, count, total_mm) in runs {
                 let matched_seq = &seq[start..end];
                 let line = format!(
-                    "{}\t{}\t{}\t{}\t{}\t{}\t{}",
+                    "{}\t{}\t{}\t{}\t.\t{}",
                     name,
-                    strand,
-                    start + 1,
+                    start,
                     end,
-                    count,
-                    total_mm,
-                    String::from_utf8_lossy(matched_seq)
+                    format!("{}_{}_{}", String::from_utf8_lossy(matched_seq), count, total_mm),
+                    strand
                 );
                 tx.send(line).expect("Failed to send result");
             }
