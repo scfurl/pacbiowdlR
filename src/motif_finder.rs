@@ -105,7 +105,7 @@ fn main() -> io::Result<()> {
     }
 
     // Print header
-    println!("#contig\tstart\tend\tname_sequence_len_mm\tscore\tstrand");
+    println!("#contig\tstart\tend\tname_seq_repeats_mm\tscore\tstrand");
 
     // Channel for thread-safe output
     let (tx, rx) = mpsc::channel();
@@ -135,7 +135,7 @@ fn main() -> io::Result<()> {
                     name,
                     start,
                     end,
-                    format!("{}_{}_{}", String::from_utf8_lossy(matched_seq), count, total_mm),
+                    format!("{}_{}_{}", String::from_utf8_lossy(matched_seq),count,total_mm,),
                     strand
                 );
                 tx.send(line).expect("Failed to send result");
