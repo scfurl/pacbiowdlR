@@ -1,0 +1,132 @@
+---
+title: "Isoseq Data"
+author: "Scott Furlan"
+date: "`r Sys.Date()`"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+params:
+  EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
+vignette: >
+  %\VignetteIndexEntry{Analyzing Isoseq Data}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+alias: isoseq
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse  = TRUE,
+  comment   = "#>",
+  eval      = params$EVAL,
+  fig.align = "center",
+  dpi       = 300,   # high-DPI source
+  fig.retina = 2     # down-sample for HiDPI (“retina”) displays
+)
+```
+
+
+## 1  Overview
+
+This vignette demonstrates two high-level workflows provided by the **Iso-Seq
+QC** helpers in this package:
+
+* **Saturation (rarefaction) modelling** — `fit_isoseq_saturation()`
+  Fits three asymptotic curves (negative exponential, Michaelis–Menten,
+  4-parameter logistic) to PacBio’s *`*.saturation.txt`* output and reports
+  plateau estimates, discovery fractions, and model comparison statistics.
+
+* **Multi-panel QC dashboard** — `plot_isoseq_overview()`
+  Turns a plain-text or JSON *classification summary* into a 
+  figure that summarises transcript classifications, splice-junction
+  composition, gene novelty, and RT-switch artefacts.
+
+Throughout we use three real datasets (`LL1_S1`, `LL2_S18`, `LL3_S42`), but you
+can substitute your own file paths.
+
+---
+
+## 2  Required packages
+
+```{r libs}
+library(pacbiowdlR)         # the package that houses the helpers
+library(ggplot2)          # for standalone tweaks (optional)
+```
+
+---
+
+## 3  Saturation analysis
+
+### 3.1  Fit models
+
+```{r saturation-fit, fig.width = 7, fig.height = 5}
+sat_path <- "/Users/sfurlan/Desktop/LL1_S1/LL1_S1.saturation.txt"
+
+res <- fit_isoseq_saturation(sat_path)   # negative-exp, M-M, logistic
+res$asymptote                          # plateau (unique genes) for each model
+res$saturation                         # observed / plateau fraction
+```
+
+### 3.2  Visualise fits
+
+```{r saturation-plots, fig.width = 6, fig.height = 4, out.width = "95%"}
+res$plots$mm     # Michaelis–Menten
+```
+
+```{r saturation-plots-exp, fig.width = 6, fig.height = 4, out.width = "95%"}
+res$plots$exp    # Negative exponential
+```
+
+```{r saturation-plots-log, fig.width = 6, fig.height = 4, out.width = "95%"}
+res$plots$log    # 4-parameter logistic
+```
+
+### 3.3  Model comparison
+
+```{r aic-table, results = "asis"}
+knitr::kable(res$aic, caption = "AIC comparison of the three asymptotic fits")
+```
+
+---
+
+## 4  Transcript-level QC dashboards
+
+### 4.1  Single sample
+
+```{r overview-one, fig.width = 10, fig.height = 7}
+sum_path <- "/Users/sfurlan/Desktop/LL1_S1/LL1_S1.summary.txt"
+plot_isoseq_overview(sum_path)
+```
+
+### 4.2  Batch of samples
+
+```{r overview-batch, fig.width = 10, fig.height = 7}
+for (p in c("LL3_S42", "LL2_S18")) {
+  p <- plot_isoseq_overview(
+    read_isoseq_summary(paste0("/Users/sfurlan/Desktop/", p, "/", p, ".summary.txt"))
+  )
+  print(p)
+}
+```
+
+---
+
+## 5  Session information
+
+```{r session-info}
+sessionInfo()
+```
+
+---
+
+### References
+
+* **Gonzalez et al.** *A complete reference transcriptome improves analysis of
+  human transcriptomic data.* *Nat. Methods* **22**, 834–846 (2024).
+* **PacBio**. *Iso-Seq Analysis Application Guide* (v11, 2025).
+
+```
+
