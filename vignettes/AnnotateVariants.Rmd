@@ -31,3 +31,44 @@ plot_snpEff(variantsfile, cores = 16)
 ```
 
 ![](../man/figures/variants.png){width=100%}
+```{r, eval=FALSE, include = FALSE}
+data_wsu <- read_json_file("/Volumes/furlan_s/sfurlan/pbjay/WSU_AML_ctl/pacbiowdlR/outputs.json")
+variantsfile <- data_wsu$humanwgs_singleton.tertiary_small_variant_filtered_vcf
+
+vcf <- VariantAnnotation::readVcf(variantsfile)
+mutsfile  <- system.file("extdata", "examples/wsuaml_mutations.csv", package = "pacbiowdlR")
+#muts <- read.csv("/Users/sfurlan/develop/pacbiowdlR/inst/extdata/examples/wsuaml_mutations.csv")
+muts <- read.csv(mutsfile)
+mutsGR <- GRanges(seqnames = muts$Chromosome, IRanges(start = muts$Position, end = muts$Position))
+#but this is hg19 probs.
+# Import chain, run liftOver
+library(rtracklayer)
+library(magrittr)
+utils::download.file(
+  url = "http://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz",
+  destfile = "hg19ToHg38.over.chain.gz",
+  mode = "wb"
+)
+system(paste("gunzip -c", shQuote("hg19ToHg38.over.chain.gz"), ">", shQuote("hg19ToHg38.over.chain")))
+chain <- import.chain("hg19ToHg38.over.chain")
+lifted <- liftOver(mutsGR, chain)
+muts_grch38 <- unlist(lifted)
+  
+ol <- findOverlaps(vcf@rowRanges, muts_grch38)
+fvcf <- vcf[ol@from,]
+#okay not hg19
+
+
+ol <- findOverlaps(vcf@rowRanges, mutsGR)
+fvcf <- vcf[ol@from,]
+VariantAnnotation::alt(fvcf)
+
+#now filter for common
+mutsGR_filt <- mutsGR[ol@to,]
+muts_filt <- muts[ol@to,]
+
+tab <- table(muts_filt$Alt.Allele==as.character(VariantAnnotation::alt(fvcf) %>% unlist()))
+
+dim(fvcf)[1]/nrow(muts)
+tab[2]/(tab[1]+tab[2]) %>% as.numeric()
+```

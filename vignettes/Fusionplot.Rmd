@@ -58,3 +58,34 @@ print_fusion_matches(results[hits])
 
 plot_fusions(fusions, annotate = T, highlight = hits)
 ```
+
+
+
+```{r}
+
+a4573 <- read_json_file("/Volumes/furlan_s/grp/data/FurlanLab2025/lewings/pbWGS/A4573/pacbiowdlR/outputs.json", sub1 = "/fh/fast")
+tc71 <- read_json_file("/Volumes/furlan_s/grp/data/FurlanLab2025/lewings/pbWGS/TC71/pacbiowdlR/outputs.json", sub1 = "/fh/fast")
+tc32 <- read_json_file("/Volumes/furlan_s/grp/data/FurlanLab2025/lewings/pbWGS/TC32/pacbiowdlR/outputs.json", sub1 = "/fh/fast")
+chla10 <- read_json_file("/Volumes/furlan_s/grp/data/FurlanLab2025/lewings/pbWGS/CHLA10/pacbiowdlR/outputs.json", sub1 = "/fh/fast")
+chla9 <- read_json_file("/Volumes/furlan_s/grp/data/FurlanLab2025/lewings/pbWGS/CHLA9/pacbiowdlR/outputs.json", sub1 = "/fh/fast")
+
+
+fusions<-get_fusions_from_vcf(a4573$humanwgs_singleton.phased_sv_vcf, plot = T, filter = "", thresh = 10, highlight = 28, title = "A4573")
+fusions<-get_fusions_from_vcf(tc71$humanwgs_singleton.phased_sv_vcf, plot = T, filter = "", thresh = 5, highlight = 69, title = "TC71")
+fusions<-get_fusions_from_vcf(tc32$humanwgs_singleton.phased_sv_vcf, plot = T, filter = "", thresh = 5, highlight = 25, title = "TC32")
+fusions<-get_fusions_from_vcf(chla9$humanwgs_singleton.phased_sv_vcf, plot = T, filter = "", thresh = 5, highlight = 16, title = "CHLA9")
+fusions<-get_fusions_from_vcf(chla10$humanwgs_singleton.phased_sv_vcf, plot = T, filter = "", thresh = 1, title = "CHLA10")
+```
+
+
+
+```{r, eval=F, include = F}
+data_wsu <- read_json_file("/Volumes/furlan_s/sfurlan/pbjay/WSU_AML_ctl/pacbiowdlR/outputs.json")
+
+gtf <- "/Users/sfurlan/Library/CloudStorage/OneDrive-FredHutchCancerCenter/computation/refs/GTFs/gencode.v47.chr_patch_hapl_scaff.annotation.gtf"
+preload_gtf(gtf)
+fusions <- get_fusions_from_vcf(data_wsu$humanwgs_singleton.phased_sv_vcf, gtf_file = gtf, plot = T, annotate = T, filter = "", thresh = 3)
+fusions$fusion_details
+
+fusions[6,]
+```
