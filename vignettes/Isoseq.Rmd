@@ -142,9 +142,55 @@ colnames(cnts)<-c("S1", "S18", "S42", "SAdd")
 seuQ <- CreateSeuratObject(cnts)
 ```
 
+## 5 Fusions
 
+After running pbfusion, use this inteface to explore fusion calls
+```{r}
+files <- c("/Volumes/furlan_s/sfurlan/250302_leuklong/250228_SF_iso-seq/LL1_S1/pbfusion/LL1_S1.breakpoints.groups.bed", "/Volumes/furlan_s/sfurlan/250302_leuklong/250228_SF_iso-seq/LL2_S18/pbfusion/LL2_S18.breakpoints.groups.bed",
+"/Volumes/furlan_s/sfurlan/250302_leuklong/250228_SF_iso-seq/LL3_S42/pbfusion/LL3_S42.breakpoints.groups.bed",
+"/Volumes/furlan_s/sfurlan/250302_leuklong/250228_SF_iso-seq/LL4_SAdd/pbfusion/LL4_SAdd.breakpoints.groups.bed")
 
-## 5  Session information
+read_fusions <- function(files, threads = 4){
+  for(file in files){
+    if(file.exists(file)) {next} else {stop(paste0("File not found:", file))}
+  }
+  fusion_lists <- pbmcapply::pbmclapply(files, function(file){
+    calls <- read.table(file)
+    colnames<-c("chr1	start1	end1	chr2	start2	end2	id	score	strand1	strand2	info	extra")
+    colnames(calls) <- strsplit(colnames, "\t")[[1]]
+    calls
+  }, mc.cores = threads)
+  return(fusion_lists)
+}
+
+data <- read_fusions(files)
+
+names(data) <- c("S1", "S18", "S42", "SAdd")
+
+parse_fusion_calls <- function(data, rc_thresh = 20, score = c("MEDIUM", "LOW")){
+  if(class(data)=="data.frame"){
+    data <- list(data)
+  }
+  call_list <- lapply(data, function(df){
+    df <- df[df$score %in% score,]
+    rc <- strsplit(df$info, ";") |> sapply("[[", 1)
+    rc <- gsub("RC=", "", rc) |> as.numeric()
+    gn <- strsplit(df$info, ";") |> sapply("[[", 5)
+    gn <- gsub("GN=", "", gn)
+    gn <- gsub("N/A,", "", gn)
+    gn <- gsub(",N/A", "", gn)
+    gn <- gsub(",", "::", gn)
+    df <- data.frame(fusion=gn, read_count=rc)
+    df <- df[df$read_count>=rc_thresh,]
+  })
+  call_list
+}
+
+fusion_calls <- parse_fusion_calls(data, score = "MEDIUM", rc_thresh = 7)
+
+```
+
+## 6  Session information
 
 ```{r session-info}
 sessionInfo()
