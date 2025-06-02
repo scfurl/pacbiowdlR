@@ -89,3 +89,73 @@ fusions$fusion_details
 
 fusions[6,]
 ```
+
+
+```{r, eval=F, include = F}
+EW1 <- read_json_file("/Volumes/furlan_s/sfurlan/250520_leuklong/pbWGS/LL2_EW1/pacbiowdlR/outputs.json")
+
+gtf <- "/Users/sfurlan/Library/CloudStorage/OneDrive-FredHutchCancerCenter/computation/refs/GTFs/gencode.v47.chr_patch_hapl_scaff.annotation.gtf"
+preload_gtf(gtf)
+v<-VariantAnnotation::readVcf(EW1$humanwgs_singleton.phased_sv_vcf)
+table( v@rowRanges@ranges@start=="35854014")
+v2<-v[v@rowRanges@ranges@start=="35854014",]
+v2@assays@data$DP
+v2@rowRanges
+
+fusions <- get_fusions_from_vcf(EW1$humanwgs_singleton.phased_sv_vcf, gtf_file = gtf, plot = T, annotate = T, filter = "", thresh = 20)
+fusions$fusion_name
+db_fusions <- get_neosplice_db()
+
+results <- find_related_fusions(fusions, db_fusions)
+hits <- as.numeric(which(sapply(results, function(f) length(f)>0)))
+fusions[hits,]
+print_fusion_matches(results[hits])
+
+plot_fusions(fusions, annotate = T, highlight = 72)
+
+fusions[72,]
+```
+
+
+
+```{r, eval=F, include = F}
+S12 <- read_json_file("/Volumes/furlan_s/sfurlan/250520_leuklong/pbWGS/LL2_S12/pacbiowdlR/outputs.json")
+
+gtf <- "/Users/sfurlan/Library/CloudStorage/OneDrive-FredHutchCancerCenter/computation/refs/GTFs/gencode.v47.chr_patch_hapl_scaff.annotation.gtf"
+preload_gtf(gtf)
+
+fusions <- get_fusions_from_vcf(S12$humanwgs_singleton.phased_sv_vcf, gtf_file = gtf, plot = T, annotate = T,  thresh = 20)
+fusions$fusion_name
+db_fusions <- get_neosplice_db()
+
+results <- find_related_fusions(fusions, db_fusions)
+hits <- as.numeric(which(sapply(results, function(f) length(f)>0)))
+fusions[hits,]
+print_fusion_matches(results[hits])
+
+plot_fusions(fusions, annotate = T, highlight = hits)
+
+fusions[hits,]
+```
+
+
+
+```{r, eval=F, include = F}
+S5 <- read_json_file("/Volumes/furlan_s/sfurlan/250520_leuklong/pbWGS/LL2_S5/pacbiowdlR/outputs.json")
+
+gtf <- "/Users/sfurlan/Library/CloudStorage/OneDrive-FredHutchCancerCenter/computation/refs/GTFs/gencode.v47.chr_patch_hapl_scaff.annotation.gtf"
+preload_gtf(gtf)
+
+fusions <- get_fusions_from_vcf(S5$humanwgs_singleton.phased_sv_vcf, gtf_file = gtf, plot = T, annotate = T, thresh = 20)
+fusions$fusion_name
+db_fusions <- get_neosplice_db()
+
+results <- find_related_fusions(fusions, db_fusions)
+hits <- as.numeric(which(sapply(results, function(f) length(f)>0)))
+fusions[hits,]
+print_fusion_matches(results[hits])
+
+plot_fusions(fusions, annotate = T, highlight = hits)
+
+fusions[9,]
+```

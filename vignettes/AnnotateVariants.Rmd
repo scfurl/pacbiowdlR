@@ -72,3 +72,24 @@ tab <- table(muts_filt$Alt.Allele==as.character(VariantAnnotation::alt(fvcf) %>%
 dim(fvcf)[1]/nrow(muts)
 tab[2]/(tab[1]+tab[2]) %>% as.numeric()
 ```
+
+
+```{r, eval=FALSE, include = FALSE}
+
+
+
+S5 <- read_json_file("/Volumes/furlan_s/sfurlan/250520_leuklong/pbWGS/LL2_S5/pacbiowdlR/outputs.json")
+variantsfile <- S5$humanwgs_singleton.phased_small_variant_vcf
+variantsfile <- S5$humanwgs_singleton.tertiary_small_variant_filtered_vcf
+
+vcf <- VariantAnnotation::readVcf(variantsfile)
+muts <- read.csv("/Volumes/furlan_s/sfurlan/250520_leuklong/snpEff/snpEff_out/LL2_S5/LL2_S5.small_variants.ann.txt", sep = "\t")
+
+#muts <- read.csv("/Volumes/furlan_s/sfurlan/250520_leuklong/snpEff/snpEff_out/LL2_S5/LL2_S5.small_variants.clinvar.txt", sep = "\t")
+
+muts[muts$CLNSIG=="Pathogenic" & !is.na(muts$CLNSIG),]
+
+mi <- muts[grep("IKZF1", muts$ANN),]
+
+mi[mi$TYPE=="INDEL",]
+```
