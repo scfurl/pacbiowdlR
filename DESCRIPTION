@@ -34,3 +34,4 @@ Suggests:
     knitr,
     rmarkdown
 URL: https://scfurl.github.io/pacbiowdlR/
+Config/rextendr/version: 0.3.1
