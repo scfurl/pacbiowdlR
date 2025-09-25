@@ -159,3 +159,28 @@ plot_fusions(fusions, annotate = T, highlight = hits)
 
 fusions[9,]
 ```
+
+```{r, eval=F, include = F}
+library(pacbiowdlR)
+a673 <- read_json_file("/Volumes/furlan_s/sfurlan/250711_lewings_lines/pacbiowdlR/A673/outputs.json", sub1 = "/fh/working")
+pdx305 <- read_json_file("/Volumes/furlan_s/sfurlan/250711_lewings_lines/pacbiowdlR/PDX305/outputs.json", sub1 = "/fh/working")
+chla10 <- read_json_file("/Volumes/furlan_s/sfurlan/250711_lewings_lines/pacbiowdlR/CHLA10/outputs.json", sub1 = "/fh/working")
+chla9 <- read_json_file("/Volumes/furlan_s/sfurlan/250711_lewings_lines/pacbiowdlR/CHLA9/outputs.json", sub1 = "/fh/working")
+tc71 <- read_json_file("/Volumes/furlan_s/sfurlan/250711_lewings_lines/pacbiowdlR/TC71/outputs.json", sub1 = "/fh/working")
+tc32 <- read_json_file("/Volumes/furlan_s/sfurlan/250711_lewings_lines/pacbiowdlR/TC32/outputs.json", sub1 = "/fh/working")
+rdes <- read_json_file("/Volumes/furlan_s/sfurlan/250711_lewings_lines/pacbiowdlR/RDES/outputs.json", sub1 = "/fh/working")
+sknmc <- read_json_file("/Volumes/furlan_s/sfurlan/250711_lewings_lines/pacbiowdlR/SKNMC/outputs.json", sub1 = "/fh/working")
+a4573 <- read_json_file("/Volumes/furlan_s/sfurlan/250711_lewings_lines/pacbiowdlR/A4573/outputs.json", sub1 = "/fh/working")
+
+gtf <- "/Users/sfurlan/Library/CloudStorage/OneDrive-FredHutchCancerCenter/computation/refs/GTFs/gencode.v47.chr_patch_hapl_scaff.annotation.gtf"
+preload_gtf(gtf)
+
+fusions <- get_fusions_from_vcf(a4573$humanwgs_singleton.phased_sv_vcf, gtf_file = gtf, plot = T, annotate = T, thresh = 20)
+
+fusions<-get_fusions_from_vcf(a4573$humanwgs_singleton.phased_sv_vcf, plot = T, thresh = 20, highlight = 1, title = "A4573")
+
+fusions<-get_fusions_from_vcf(tc71$humanwgs_singleton.phased_sv_vcf, plot = T, filter = "", thresh = 5, highlight = 69, title = "TC71")
+fusions<-get_fusions_from_vcf(tc32$humanwgs_singleton.phased_sv_vcf, plot = T, filter = "", thresh = 5, highlight = 25, title = "TC32")
+fusions<-get_fusions_from_vcf(chla9$humanwgs_singleton.phased_sv_vcf, plot = T, filter = "", thresh = 5, highlight = 16, title = "CHLA9")
+fusions<-get_fusions_from_vcf(chla10$humanwgs_singleton.phased_sv_vcf, plot = T, filter = "", thresh = 1, title = "CHLA10")
+```

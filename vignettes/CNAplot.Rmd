@@ -302,62 +302,65 @@ MAF_plot <- function (maf_bigwig_file, variant_file, downsample = 0.03,
 
 ```{r, include = F, eval=F}
 library(pacbiowdlR)
-a4573 <- read_json_file("/Volumes/furlan_s/grp/data/FurlanLab2025/lewings/pbWGS/A4573/pacbiowdlR/outputs.json", sub1 = "/fh/fast")
-tc71 <- read_json_file("/Volumes/furlan_s/grp/data/FurlanLab2025/lewings/pbWGS/TC71/pacbiowdlR/outputs.json", sub1 = "/fh/fast")
-tc32 <- read_json_file("/Volumes/furlan_s/grp/data/FurlanLab2025/lewings/pbWGS/TC32/pacbiowdlR/outputs.json", sub1 = "/fh/fast")
-
-a4573$humanwgs_singleton.stat_mean_depth
-
-chla10 <- read_json_file("/Volumes/furlan_s/grp/data/FurlanLab2025/lewings/pbWGS/CHLA10/pacbiowdlR/outputs.json", sub1 = "/fh/fast")
-chla9 <- read_json_file("/Volumes/furlan_s/grp/data/FurlanLab2025/lewings/pbWGS/CHLA9/pacbiowdlR/outputs.json", sub1 = "/fh/fast")
+a673 <- read_json_file("/Volumes/furlan_s/sfurlan/250711_lewings_lines/pacbiowdlR/A673/outputs.json", sub1 = "/fh/working")
+pdx305 <- read_json_file("/Volumes/furlan_s/sfurlan/250711_lewings_lines/pacbiowdlR/PDX305/outputs.json", sub1 = "/fh/working")
+chla10 <- read_json_file("/Volumes/furlan_s/sfurlan/250711_lewings_lines/pacbiowdlR/CHLA10/outputs.json", sub1 = "/fh/working")
+chla9 <- read_json_file("/Volumes/furlan_s/sfurlan/250711_lewings_lines/pacbiowdlR/CHLA9/outputs.json", sub1 = "/fh/working")
+tc71 <- read_json_file("/Volumes/furlan_s/sfurlan/250711_lewings_lines/pacbiowdlR/TC71/outputs.json", sub1 = "/fh/working")
+tc32 <- read_json_file("/Volumes/furlan_s/sfurlan/250711_lewings_lines/pacbiowdlR/TC32/outputs.json", sub1 = "/fh/working")
+rdes <- read_json_file("/Volumes/furlan_s/sfurlan/250711_lewings_lines/pacbiowdlR/RDES/outputs.json", sub1 = "/fh/working")
+sknmc <- read_json_file("/Volumes/furlan_s/sfurlan/250711_lewings_lines/pacbiowdlR/SKNMC/outputs.json", sub1 = "/fh/working")
+a4573 <- read_json_file("/Volumes/furlan_s/sfurlan/250711_lewings_lines/pacbiowdlR/A4573/outputs.json", sub1 = "/fh/working")
 
 chla9$humanwgs_singleton.stat_mean_depth
-chla10$humanwgs_singleton.stat_mean_depth
-
-
-CNA_plot(depth_bigwig_file  =   a4573$humanwgs_singleton.cnv_depth_bw, trend_regions = "inside",
-  variant_file       =   a4573$humanwgs_singleton.cnv_vcf, 
-  downsample         = 0.1,  method = "fit", min_value = -3, max_value = 3, colors = chrom_palette,
-  samplename         = "a4573", line_color = "black")
-
-CNA_plot(depth_bigwig_file  =   tc71$humanwgs_singleton.cnv_depth_bw, trend_regions = "inside",
-  variant_file       =   tc71$humanwgs_singleton.cnv_vcf, 
-  downsample         = 0.1,  method = "fit", min_value = -3, max_value = 3, colors = chrom_palette,
-  samplename         = "TC71", line_color = "black")
-
-CNA_plot(depth_bigwig_file  =   tc32$humanwgs_singleton.cnv_depth_bw, trend_regions = "inside",
-  variant_file       =   tc32$humanwgs_singleton.cnv_vcf, 
-  downsample         = 0.1,  method = "fit", min_value = -3, max_value = 3, colors = chrom_palette,
-  samplename         = "TC32", line_color = "black")
-
-
-CNA_plot(depth_bigwig_file  =   chla10$humanwgs_singleton.cnv_depth_bw, trend_regions = "inside",
-  variant_file       =   chla10$humanwgs_singleton.cnv_vcf, 
-  downsample         = 0.1,  method = "fit", min_value = -3, max_value = 3, colors = chrom_palette,
-  samplename         = "CHLA10", line_color = "black")
-
 CNA_plot(depth_bigwig_file  =   chla9$humanwgs_singleton.cnv_depth_bw, trend_regions = "inside",
   variant_file       =   chla9$humanwgs_singleton.cnv_vcf, 
   downsample         = 0.1,  method = "fit", min_value = -3, max_value = 3, colors = chrom_palette,
-  samplename         = "CHLA9", line_color = "black")
+  samplename         = "chla9", line_color = "black")
+
+CNA_plot_highlight(depth_bigwig_file  =   chla9$humanwgs_singleton.cnv_depth_bw, downsample = 1,
+                  variant_file       =   chla9$humanwgs_singleton.cnv_vcf, max_value = 3, min_value = -3,
+                  method = "fit", line_color = "black", chr_filter = "chr9", highlight_genes = "CDKN2A",
+                  colors = chrom_palette, txdb = TxDb.Hsapiens.UCSC.hg38.knownGene::TxDb.Hsapiens.UCSC.hg38.knownGene, 
+                  org = org.Hs.eg.db::org.Hs.eg.db, samplename = "chla9")
+
+chla10$humanwgs_singleton.stat_mean_depth
+CNA_plot(depth_bigwig_file  =   chla10$humanwgs_singleton.cnv_depth_bw, trend_regions = "inside",
+  variant_file       =   chla10$humanwgs_singleton.cnv_vcf, 
+  downsample         = 0.1,  method = "fit", min_value = -3, max_value = 3, colors = chrom_palette,
+  samplename         = "chla10", line_color = "black")
 
 CNA_plot_highlight(depth_bigwig_file  =   chla10$humanwgs_singleton.cnv_depth_bw, downsample = 1,
                   variant_file       =   chla10$humanwgs_singleton.cnv_vcf, max_value = 3, min_value = -3,
                   method = "fit", line_color = "black", chr_filter = "chr9", highlight_genes = "CDKN2A",
                   colors = chrom_palette, txdb = TxDb.Hsapiens.UCSC.hg38.knownGene::TxDb.Hsapiens.UCSC.hg38.knownGene, 
-                  org = org.Hs.eg.db::org.Hs.eg.db, samplename = "CHLA10")
+                  org = org.Hs.eg.db::org.Hs.eg.db, samplename = "chla10")
 
-CNA_plot_highlight(depth_bigwig_file  =   chla9$humanwgs_singleton.cnv_depth_bw, downsample = 1,
-                  variant_file       =   chla9$humanwgs_singleton.cnv_vcf, max_value = 3, min_value = -3,
-                  method = "fit", line_color = "black", chr_filter = "chr16", gene_delta_threshold = 10, 
-                  colors = chrom_palette, txdb = TxDb.Hsapiens.UCSC.hg38.knownGene::TxDb.Hsapiens.UCSC.hg38.knownGene, 
-                  org = org.Hs.eg.db::org.Hs.eg.db, samplename = "CHLA9")
 
-CNA_plot_highlight(depth_bigwig_file  =   tc71$humanwgs_singleton.cnv_depth_bw, downsample = 1,
-                  variant_file       =   tc71$humanwgs_singleton.cnv_vcf, max_value = 3, min_value = -3,
+a673$humanwgs_singleton.stat_mean_depth
+CNA_plot(depth_bigwig_file  =   a673$humanwgs_singleton.cnv_depth_bw, trend_regions = "inside",
+  variant_file       =   a673$humanwgs_singleton.cnv_vcf, 
+  downsample         = 0.1,  method = "fit", min_value = -3, max_value = 3, colors = chrom_palette,
+  samplename         = "a673", line_color = "black")
+
+CNA_plot_highlight(depth_bigwig_file  =   a673$humanwgs_singleton.cnv_depth_bw, downsample = 1,
+                  variant_file       =   a673$humanwgs_singleton.cnv_vcf, max_value = 3, min_value = -3,
                   method = "fit", line_color = "black", chr_filter = "chr9", highlight_genes = "CDKN2A",
                   colors = chrom_palette, txdb = TxDb.Hsapiens.UCSC.hg38.knownGene::TxDb.Hsapiens.UCSC.hg38.knownGene, 
-                  org = org.Hs.eg.db::org.Hs.eg.db, samplename = "TC71")
+                  org = org.Hs.eg.db::org.Hs.eg.db, samplename = "a673")
+
+
+pdx305$humanwgs_singleton.stat_mean_depth
+CNA_plot(depth_bigwig_file  =   pdx305$humanwgs_singleton.cnv_depth_bw, trend_regions = "inside",
+  variant_file       =   pdx305$humanwgs_singleton.cnv_vcf, 
+  downsample         = 0.1,  method = "fit", min_value = -3, max_value = 3, colors = chrom_palette,
+  samplename         = "pdx305", line_color = "black")
+
+CNA_plot_highlight(depth_bigwig_file  =   pdx305$humanwgs_singleton.cnv_depth_bw, downsample = 1,
+                  variant_file       =   pdx305$humanwgs_singleton.cnv_vcf, max_value = 3, min_value = -3,
+                  method = "fit", line_color = "black", chr_filter = "chr9", highlight_genes = "CDKN2A",
+                  colors = chrom_palette, txdb = TxDb.Hsapiens.UCSC.hg38.knownGene::TxDb.Hsapiens.UCSC.hg38.knownGene, 
+                  org = org.Hs.eg.db::org.Hs.eg.db, samplename = "pdx305")
 ```
 
 
