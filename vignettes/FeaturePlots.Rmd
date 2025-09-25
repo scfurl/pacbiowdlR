@@ -1,0 +1,111 @@
+---
+title: "Exploring Methylation and Accessibility Calls"
+author: "Scott Furlan"
+date: "`r Sys.Date()`"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+params:
+  EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
+vignette: >
+  %\VignetteIndexEntry{Exploring Methylation and Accessibility Calls}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+alias: dna_fusions
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, child="children/SETTINGS-knitr_fusions.txt"}
+```
+
+
+
+
+```{r, eval=TRUE}
+library(pacbiowdlR)
+file <- "/Volumes/furlan_s/sfurlan/250520_leuklong/pbWGS/LL2_EW1/pacbiowdlR/outputs.json"
+ew <- read_json_file(file)
+mbw <- ew$humanwgs_singleton.cpg_combined_bw
+abw <- "/Volumes/furlan_s/sfurlan/250520_leuklong/fibertools/FIRE/results/bigwigs/LL2_EW1-fire-v0.1.1-pileup_shrunk.bw"
+
+#BiocManager::install("profileplyr")
+library(profileplyr)
+signalFiles <- c(mbw, abw)
+
+# BAMs must be indexed
+require(Rsamtools)
+# for (i in seq_along(signalFiles)){
+#   indexBam(signalFiles[i])
+# }
+
+testRanges <- system.file("extdata", 
+                          "newranges_small.bed", 
+                          package = "profileplyr")
+
+library(GenomicFeatures)
+library(TxDb.Hsapiens.UCSC.hg38.knownGene)  # GRCh38 (hg38)
+library(rtracklayer)
+
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+
+# Promoters: 2000 bp upstream, 200 bp downstream of TSS (stranded-aware)
+proms <- promoters(txdb, upstream = 2000, downstream = 200)
+BiocManager::install(c("ensembldb","EnsDb.Hsapiens.v86","GenomicFeatures","rtracklayer"))
+library(ensembldb)
+library(EnsDb.Hsapiens.v86)   # Ensembl v86 (GRCh38)
+library(GenomicFeatures)
+library(rtracklayer)
+
+edb <- EnsDb.Hsapiens.v86
+
+# Get transcripts as GRanges (includes strand & gene IDs)
+tx <- transcripts(edb, return.type = "GRanges")
+
+# Build promoter ranges around TSS (e.g., 2kb up, 200bp down)
+proms <- promoters(tx, upstream = 2000, downstream = 200)
+
+# Compute CDS length per transcript; fallback to transcript length if no CDS
+cds <- cdsBy(edb, by = "tx")                 # GRangesList keyed by tx
+cds_len <- sum(width(cds))                   # numeric vector by tx
+tx$cds_len <- cds_len[names(tx)]
+tx$cds_len[is.na(tx$cds_len)] <- width(tx)[is.na(tx$cds_len)]
+
+# Pick the transcript with the longest CDS per gene
+tx_by_gene <- split(tx, tx$gene_id)
+tx_rep <- do.call(c, lapply(tx_by_gene, function(g) g[ which.max(g$cds_len) ]))
+tx_rep <- unlist(GRangesList(tx_rep))
+# Derive gene-level promoters from that representative TSS
+tss_rep <- resize(tx_rep, width = 1, fix = "start")  # start = TSS (strand-aware)
+prom_gene <- promoters(tss_rep, upstream = 2000, downstream = 200)
+
+# Keep gene_name if present
+if ("gene_name" %in% colnames(mcols(tx_rep))) {
+  prom_gene$symbol <- mcols(tx_rep)$gene_name
+}
+
+prom_gene
+
+
+export(prom_gene, "hg38_gene_promoters_longestCDS_2kb_up_200bp_down.bed")
+
+
+chipProfile <- BamBigwig_to_chipProfile(signalFiles, 
+                         testRanges, 
+                         format = "bigwig",
+                         paired=FALSE,
+                         style="percentOfRegion",
+                         nOfWindows=20,
+                         distanceAround=40
+                         )
+proplyrObject <- as_profileplyr(chipProfile)
+kmeans <- clusterRanges(proplyrObject, 
+                        fun = rowMeans, 
+                        kmeans_k = 2, 
+                        silent = FALSE)
+
+
+
+```
+
