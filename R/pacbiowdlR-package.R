@@ -3,6 +3,6 @@
 #' The **pacbiowdlR** package provides functions for visualizing copy number alterations (CNAs)
 #' from PacBio WDL pipelines. Its functions leverage **ggplot2** to create customizable plots.
 #'
-#' @docType package
+#' _PACKAGE package
 #' @name pacbiowdlR-package
 NULL

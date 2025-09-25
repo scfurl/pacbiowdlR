@@ -1,0 +1,14 @@
+/Users/sfurlan/develop/pacbiowdlR/src/./rust/target/release/deps/serde-150238dd0bd0691e.d: /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.226/src/lib.rs /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.226/src/integer128.rs /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.226/src/private/mod.rs /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.226/src/private/de.rs /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.226/src/private/ser.rs /Users/sfurlan/develop/pacbiowdlR/src/./rust/target/release/build/serde-71327ec9bc347d6d/out/private.rs
+
+/Users/sfurlan/develop/pacbiowdlR/src/./rust/target/release/deps/libserde-150238dd0bd0691e.rlib: /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.226/src/lib.rs /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.226/src/integer128.rs /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.226/src/private/mod.rs /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.226/src/private/de.rs /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.226/src/private/ser.rs /Users/sfurlan/develop/pacbiowdlR/src/./rust/target/release/build/serde-71327ec9bc347d6d/out/private.rs
+
+/Users/sfurlan/develop/pacbiowdlR/src/./rust/target/release/deps/libserde-150238dd0bd0691e.rmeta: /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.226/src/lib.rs /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.226/src/integer128.rs /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.226/src/private/mod.rs /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.226/src/private/de.rs /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.226/src/private/ser.rs /Users/sfurlan/develop/pacbiowdlR/src/./rust/target/release/build/serde-71327ec9bc347d6d/out/private.rs
+
+/Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.226/src/lib.rs:
+/Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.226/src/integer128.rs:
+/Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.226/src/private/mod.rs:
+/Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.226/src/private/de.rs:
+/Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.226/src/private/ser.rs:
+/Users/sfurlan/develop/pacbiowdlR/src/./rust/target/release/build/serde-71327ec9bc347d6d/out/private.rs:
+
+# env-dep:OUT_DIR=/Users/sfurlan/develop/pacbiowdlR/src/./rust/target/release/build/serde-71327ec9bc347d6d/out

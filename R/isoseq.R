@@ -118,7 +118,7 @@ read_isoseq_summary <- function(path) {
 #'   scale_y_continuous scale_fill_manual labs theme_void theme_minimal
 #'   theme element_text ggsave scale_fill_brewer
 #' @importFrom dplyr bind_rows mutate group_by ungroup
-#' @importFrom tidyr %>%            # pipe
+#' @importFrom magrittr "%>%"
 #' @importFrom forcats fct_reorder
 #' @importFrom scales percent comma percent_format
 #' @importFrom RColorBrewer brewer.pal

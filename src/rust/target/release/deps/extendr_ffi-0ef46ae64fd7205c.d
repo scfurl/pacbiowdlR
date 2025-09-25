@@ -1,0 +1,11 @@
+/Users/sfurlan/develop/pacbiowdlR/src/./rust/target/release/deps/extendr_ffi-0ef46ae64fd7205c.d: /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/extendr-ffi-0.8.1/src/lib.rs /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/extendr-ffi-0.8.1/src/graphics.rs /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/extendr-ffi-0.8.1/src/altrep.rs /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/extendr-ffi-0.8.1/src/symbols.rs /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/extendr-ffi-0.8.1/src/backports.rs
+
+/Users/sfurlan/develop/pacbiowdlR/src/./rust/target/release/deps/libextendr_ffi-0ef46ae64fd7205c.rlib: /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/extendr-ffi-0.8.1/src/lib.rs /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/extendr-ffi-0.8.1/src/graphics.rs /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/extendr-ffi-0.8.1/src/altrep.rs /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/extendr-ffi-0.8.1/src/symbols.rs /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/extendr-ffi-0.8.1/src/backports.rs
+
+/Users/sfurlan/develop/pacbiowdlR/src/./rust/target/release/deps/libextendr_ffi-0ef46ae64fd7205c.rmeta: /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/extendr-ffi-0.8.1/src/lib.rs /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/extendr-ffi-0.8.1/src/graphics.rs /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/extendr-ffi-0.8.1/src/altrep.rs /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/extendr-ffi-0.8.1/src/symbols.rs /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/extendr-ffi-0.8.1/src/backports.rs
+
+/Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/extendr-ffi-0.8.1/src/lib.rs:
+/Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/extendr-ffi-0.8.1/src/graphics.rs:
+/Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/extendr-ffi-0.8.1/src/altrep.rs:
+/Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/extendr-ffi-0.8.1/src/symbols.rs:
+/Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/extendr-ffi-0.8.1/src/backports.rs:

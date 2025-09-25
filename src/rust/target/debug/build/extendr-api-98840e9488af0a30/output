@@ -1,0 +1,10 @@
+cargo:rustc-check-cfg=cfg(use_objsxp)
+cargo:rustc-check-cfg=cfg(use_r_newenv)
+cargo:rustc-check-cfg=cfg(use_r_ge_version_14)
+cargo:rustc-check-cfg=cfg(use_r_ge_version_15)
+cargo:rustc-check-cfg=cfg(use_r_altlist)
+cargo:rustc-cfg=use_r_newenv
+cargo:rustc-cfg=use_r_ge_version_14
+cargo:rustc-cfg=use_r_ge_version_15
+cargo:rustc-cfg=use_r_altlist
+cargo:rustc-cfg=use_objsxp

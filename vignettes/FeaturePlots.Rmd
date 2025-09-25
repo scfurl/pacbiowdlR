@@ -21,10 +21,17 @@ editor_options:
 ```
 
 
+```{r}
+library(pacbiowdlR)
+bed <- "hg38_gene_promoters_longestCDS_2kb_up_200bp_down.bed"
+bw <- "LL2_EW1.GRCh38.cpg_pileup.combined.bw"
+out <- read_bed(bed, bw)
+
+```
+
 
 
 ```{r, eval=TRUE}
-rextendr::use_extendr()
 
 library(pacbiowdlR)
 file <- "/Volumes/furlan_s/sfurlan/250520_leuklong/pbWGS/LL2_EW1/pacbiowdlR/outputs.json"

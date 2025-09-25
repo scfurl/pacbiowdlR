@@ -1,4 +1,5 @@
 roxygen2::roxygenize()
+rextendr::document()
 devtools::install()
 
 #usethis::use_pkgdown_github_pages()

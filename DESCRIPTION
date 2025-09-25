@@ -27,11 +27,12 @@ Imports:
     magrittr,
     zoo
 LinkingTo: Rcpp
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Depends: 
     R (>= 3.5)
 Suggests:
     knitr,
     rmarkdown
 URL: https://scfurl.github.io/pacbiowdlR/
-Config/rextendr/version: 0.3.1
+Config/rextendr/version: 0.4.2
+SystemRequirements: Cargo (Rust's package manager), rustc >= 1.65.0, xz

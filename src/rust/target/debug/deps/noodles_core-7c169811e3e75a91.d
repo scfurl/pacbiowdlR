@@ -1,0 +1,9 @@
+/Users/sfurlan/develop/pacbiowdlR/src/rust/target/debug/deps/noodles_core-7c169811e3e75a91.d: /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.18.0/src/lib.rs /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.18.0/src/position.rs /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.18.0/src/position/sequence_index.rs /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.18.0/src/region.rs /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.18.0/src/region/interval.rs
+
+/Users/sfurlan/develop/pacbiowdlR/src/rust/target/debug/deps/libnoodles_core-7c169811e3e75a91.rmeta: /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.18.0/src/lib.rs /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.18.0/src/position.rs /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.18.0/src/position/sequence_index.rs /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.18.0/src/region.rs /Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.18.0/src/region/interval.rs
+
+/Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.18.0/src/lib.rs:
+/Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.18.0/src/position.rs:
+/Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.18.0/src/position/sequence_index.rs:
+/Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.18.0/src/region.rs:
+/Users/sfurlan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.18.0/src/region/interval.rs:
