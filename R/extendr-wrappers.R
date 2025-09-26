@@ -10,7 +10,7 @@
 #' @useDynLib pacbiowdlR, .registration = TRUE
 NULL
 
-read_bed <- function(bed_path, bw_path) .Call(wrap__read_bed, bed_path, bw_path)
+read_bed <- function(bed_path, bw_path, bin_size, method, nthreads) .Call(wrap__read_bed, bed_path, bw_path, bin_size, method, nthreads)
 
 
 # nolint end
