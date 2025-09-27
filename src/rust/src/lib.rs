@@ -4,14 +4,16 @@ use extendr_api::prelude::*;
 
 mod bigwig;
 use bigwig::Region;
+// use std::result::Result::Ok;
 // use itertools::Itertools;
 // use ndarray::Array2;
 // use rayon::prelude::*;
 // use std::{collections::HashSet, path::Path};
 // use anyhow::*;
-
+use std::result::Result::Ok;
 // Read BED file with group handling
-// @export
+/// @export
+/// @keywords internal
 #[extendr]
 pub fn read_bed(bed_path: Robj, bw_path: Robj, bin_size: Robj, method: Robj, nthreads: Robj) -> List {
     // Check inputs
@@ -64,6 +66,71 @@ pub fn read_bed(bed_path: Robj, bw_path: Robj, bin_size: Robj, method: Robj, nth
 
     return results;
 }
+
+
+
+// fn granges_to_regions(gr: &Robj) -> anyhow::Result<Vec<Region>> {
+//     // seqnames(gr) -> character()
+//     let seq = call!("as.character", call!("seqnames", gr)?)?
+//         .as_str_vector()
+//         .ok_or_else(|| anyhow!("seqnames(): expected character vector"))?;
+
+//     // start(gr), end(gr) -> integer()
+//     let start = call!("start", gr)?
+//         .as_integer_vector()
+//         .ok_or_else(|| anyhow!("start(): expected integer vector"))?;
+//     let end = call!("end", gr)?
+//         .as_integer_vector()
+//         .ok_or_else(|| anyhow!("end(): expected integer vector"))?;
+
+//     // Optional names(gr)
+//     let names_vec = call!("names", gr)?
+//         .as_str_vector()
+//         .unwrap_or_else(|| Vec::new());
+
+//     if !(seq.len() == start.len() && start.len() == end.len()) {
+//         bail!("GRanges vectors have inconsistent lengths");
+//     }
+
+//     // Valid chroms filter (same as your BED helper)
+//     let valid: std::collections::HashSet<&'static str> = [
+//         "1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19",
+//         "20","21","22","X","Y",
+//         "chr1","chr2","chr3","chr4","chr5","chr6","chr7","chr8","chr9","chr10","chr11","chr12",
+//         "chr13","chr14","chr15","chr16","chr17","chr18","chr19","chr20","chr21","chr22","chrX","chrY"
+//     ].into_iter().collect();
+
+//     let mut out = Vec::with_capacity(seq.len());
+//     for i in 0..seq.len() {
+//         // R GRanges is 1-based inclusive: convert to 0-based half-open [start0, end0)
+//         let s_i = start[i];
+//         let e_i = end[i];
+//         if s_i.is_na() || e_i.is_na() { continue; }
+
+//         let s0 = (i32::from(s_i) - 1).max(0) as u32;
+//         let e0 = (i32::from(e_i)).max(0) as u32;
+//         if e0 <= s0 { continue; }
+
+//         let chrom = seq[i].to_string();
+//         if !valid.contains(chrom.as_str()) { continue; }
+
+//         let name = if !names_vec.is_empty() && !names_vec[i].is_empty() {
+//             Some(names_vec[i].to_string())
+//         } else {
+//             None
+//         };
+
+//         out.push(Region {
+//             chrom,
+//             start: s0,
+//             end: e0,
+//             name,
+//             coverage_bins: None,
+//         });
+//     }
+//     Ok(out)
+// }
+
 
 pub fn convert_region_to_robj(regions: &Vec<Region>) -> List {
     use extendr_api::prelude::*;

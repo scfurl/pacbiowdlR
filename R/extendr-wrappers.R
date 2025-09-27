@@ -10,6 +10,8 @@
 #' @useDynLib pacbiowdlR, .registration = TRUE
 NULL
 
+#' @export
+#' @keywords internal
 read_bed <- function(bed_path, bw_path, bin_size, method, nthreads) .Call(wrap__read_bed, bed_path, bw_path, bin_size, method, nthreads)
 
 
