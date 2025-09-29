@@ -1,18 +1,0 @@
-cargo:rustc-check-cfg=cfg(r_4_4)
-cargo:rustc-check-cfg=cfg(r_4_5)
-cargo:warning=[2K   [1m[32minfo:[0m R_HOME: /Library/Frameworks/R.framework/Resources
-cargo:warning=[2K   [1m[32minfo:[0m R_INCLUDE_DIR: /Library/Frameworks/R.framework/Resources/include
-cargo:warning=[2K   [1m[32minfo:[0m Attempting to read version from /Library/Frameworks/R.framework/Resources/include/Rversion.h
-cargo:warning=[2K   [1m[32minfo:[0m R version found is: 4.5.1
-cargo:r_home=/Library/Frameworks/R.framework/Resources
-cargo:rustc-env=R_HOME=/Library/Frameworks/R.framework/Resources
-cargo:r_version_major=4
-cargo:r_version_minor=5
-cargo:r_version_patch=1
-cargo:warning=[2K   [1m[36mnote:[0m R library paths determined to be at: "/Library/Frameworks/R.framework/Resources/lib"
-cargo:rustc-link-search=/Library/Frameworks/R.framework/Versions/4.5-arm64/Resources/lib
-cargo:rustc-link-lib=dylib=R
-cargo:rustc-cfg=r_4_4
-cargo:rustc-cfg=r_4_5
-cargo:rerun-if-env-changed=R_INCLUDE_DIR
-cargo:warning=[2K   [1m[32m Success:[0m extendr-ffi has been built!

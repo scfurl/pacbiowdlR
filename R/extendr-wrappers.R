@@ -12,7 +12,11 @@ NULL
 
 #' @export
 #' @keywords internal
-read_bed <- function(bed_path, bw_path, bin_size, method, nthreads) .Call(wrap__read_bed, bed_path, bw_path, bin_size, method, nthreads)
+read_bigwig_using_bed <- function(bed_path, bw_path, bin_size, method, nthreads) .Call(wrap__read_bigwig_using_bed, bed_path, bw_path, bin_size, method, nthreads)
+
+#' @export
+#' @keywords internal
+read_bigwig_using_gr <- function(features, bw_path, bin_size, method, nthreads) .Call(wrap__read_bigwig_using_gr, features, bw_path, bin_size, method, nthreads)
 
 
 # nolint end

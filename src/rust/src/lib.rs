@@ -4,18 +4,14 @@ use extendr_api::prelude::*;
 
 mod bigwig;
 use bigwig::Region;
-// use std::result::Result::Ok;
-// use itertools::Itertools;
-// use ndarray::Array2;
-// use rayon::prelude::*;
-// use std::{collections::HashSet, path::Path};
-// use anyhow::*;
 use std::result::Result::Ok;
-// Read BED file with group handling
+
+
+// Extract data from Bigwig using regions from a BED file
 /// @export
 /// @keywords internal
 #[extendr]
-pub fn read_bed(bed_path: Robj, bw_path: Robj, bin_size: Robj, method: Robj, nthreads: Robj) -> List {
+pub fn read_bigwig_using_bed(bed_path: Robj, bw_path: Robj, bin_size: Robj, method: Robj, nthreads: Robj) -> List {
     // Check inputs
     let bed_path_str = bed_path.as_str().unwrap();
     let bed_path = std::path::Path::new(bed_path_str);
@@ -50,14 +46,14 @@ pub fn read_bed(bed_path: Robj, bw_path: Robj, bin_size: Robj, method: Robj, nth
             bigwig::Reduce::Mean
         }
     };
-    let nthreads = nthreads.as_real().unwrap() as usize;
+    let nthreads = nthreads.as_integer().unwrap() as usize;
     if nthreads > 1 {
         eprint!("Using {} threads\n", nthreads);
         // rayon::ThreadPoolBuilder::new().num_threads(nthreads).build_global().unwrap();
     } else {
         eprint!("Using single thread\n");
     }
-    let iresults = bigwig::read_bigwig(bw_path_str, regions, bin_size, method, Some(nthreads)).unwrap();
+    let iresults = bigwig::read_bigwig(bw_path_str, regions, bin_size, method, Some(nthreads), bigwig::Missing::NaN).unwrap();
 
     // eprintln!("{:?}", results);
     println!("Done reading bigWig file");
@@ -68,68 +64,121 @@ pub fn read_bed(bed_path: Robj, bw_path: Robj, bin_size: Robj, method: Robj, nth
 }
 
 
+// Extract data from Bigwig using granges from a GRanges object
+/// @export
+/// @keywords internal
+#[extendr]
+pub fn read_bigwig_using_gr(features: Robj, bw_path: Robj, bin_size: Robj, method: Robj, nthreads: Robj) -> List {
+    // Check inputs
+    let bw_path_str = bw_path.as_str().unwrap();
+    let bw_path = std::path::Path::new(bw_path_str);
+    // check if file exists
+    if !bw_path.exists() {
+        eprintln!("File {} does not exist", bw_path.display());
+        return list!(0);
+    }
+    eprint!("Reading bigWig file from {}...\n", bw_path.display());
 
-// fn granges_to_regions(gr: &Robj) -> anyhow::Result<Vec<Region>> {
-//     // seqnames(gr) -> character()
-//     let seq = call!("as.character", call!("seqnames", gr)?)?
-//         .as_str_vector()
-//         .ok_or_else(|| anyhow!("seqnames(): expected character vector"))?;
+    let bin_size = bin_size.as_real().unwrap() as u32;
+    let method_str = method.as_str().unwrap();
+    let method = match method_str {
+        "mean" => bigwig::Reduce::Mean,
+        "sum"  => bigwig::Reduce::Sum,
+        "max"  => bigwig::Reduce::Max,
+        "min"  => bigwig::Reduce::Min,
+        _      => {
+            eprintln!("Unknown method: {}. Using 'mean'", method_str);
+            bigwig::Reduce::Mean
+        }
+    };
+    let nthreads = nthreads.as_integer().unwrap() as usize;
+    if nthreads > 1 {
+        eprint!("Using {} threads\n", nthreads);
+        // rayon::ThreadPoolBuilder::new().num_threads(nthreads).build_global().unwrap();
+    } else {
+        eprint!("Using single thread\n");
+    }
 
-//     // start(gr), end(gr) -> integer()
-//     let start = call!("start", gr)?
-//         .as_integer_vector()
-//         .ok_or_else(|| anyhow!("start(): expected integer vector"))?;
-//     let end = call!("end", gr)?
-//         .as_integer_vector()
-//         .ok_or_else(|| anyhow!("end(): expected integer vector"))?;
+    // ---- Parse features list ----
+    let flist = match features.as_list() {
+        Some(l) => l,
+        None => {
+            eprintln!("`features` must be a list: list(seqnames, start, start_plus_width, strand)");
+            return list!(0);
+        }
+    };
+    if flist.len() < 4 {
+        eprintln!("`features` must have 4 elements: seqnames, start, start_plus_width, strand");
+        return list!(0);
+    }
 
-//     // Optional names(gr)
-//     let names_vec = call!("names", gr)?
-//         .as_str_vector()
-//         .unwrap_or_else(|| Vec::new());
+    let mut it = flist.iter();
+    let binding = it.next().unwrap();
+    let seqs    = binding.1.as_str_vector().unwrap_or_default();
+    let starts  = it.next().unwrap().1.as_integer_vector().unwrap_or_default(); // Vec<Rint>
+    let ends_p1 = it.next().unwrap().1.as_integer_vector().unwrap_or_default(); // start+width
+    let binding = it.next().unwrap();
+    let strand  = binding.1.as_str_vector().unwrap_or_default();
+    let binding = it.next().unwrap();
+    let names = binding.1.as_str_vector().unwrap_or_default();
 
-//     if !(seq.len() == start.len() && start.len() == end.len()) {
-//         bail!("GRanges vectors have inconsistent lengths");
-//     }
+    // eprintln!("Seqs len: {}, starts len: {}, ends_p1 len: {}, strand len: {}", seqs.len(), starts.len(), ends_p1.len(), strand.len());
 
-//     // Valid chroms filter (same as your BED helper)
-//     let valid: std::collections::HashSet<&'static str> = [
-//         "1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19",
-//         "20","21","22","X","Y",
-//         "chr1","chr2","chr3","chr4","chr5","chr6","chr7","chr8","chr9","chr10","chr11","chr12",
-//         "chr13","chr14","chr15","chr16","chr17","chr18","chr19","chr20","chr21","chr22","chrX","chrY"
-//     ].into_iter().collect();
+    if !(seqs.len() == starts.len() && starts.len() == ends_p1.len()) {
+        eprintln!("lengths of seqnames, start, and start_plus_width differ");
+        return list!(0);
+    }
 
-//     let mut out = Vec::with_capacity(seq.len());
-//     for i in 0..seq.len() {
-//         // R GRanges is 1-based inclusive: convert to 0-based half-open [start0, end0)
-//         let s_i = start[i];
-//         let e_i = end[i];
-//         if s_i.is_na() || e_i.is_na() { continue; }
+    // ---- Build Regions (0-based, half-open) ----
+    let mut regions: Vec<bigwig::Region> = Vec::with_capacity(seqs.len());
+    for i in 0..seqs.len() {
+        let s_ri = starts[i];
+        let e1_ri = ends_p1[i];
+        if s_ri.is_na() || e1_ri.is_na() { continue; }
 
-//         let s0 = (i32::from(s_i) - 1).max(0) as u32;
-//         let e0 = (i32::from(e_i)).max(0) as u32;
-//         if e0 <= s0 { continue; }
+        let s1 = i32::from(s_ri);
+        let e1 = i32::from(e1_ri);  
 
-//         let chrom = seq[i].to_string();
-//         if !valid.contains(chrom.as_str()) { continue; }
+        if s1 <= 0 || e1 <= 0 { continue; }
 
-//         let name = if !names_vec.is_empty() && !names_vec[i].is_empty() {
-//             Some(names_vec[i].to_string())
-//         } else {
-//             None
-//         };
+        let start0 = (s1 - 1).max(0) as u32;
+        let end0   = e1.max(s1) as u32;
 
-//         out.push(Region {
-//             chrom,
-//             start: s0,
-//             end: e0,
-//             name,
-//             coverage_bins: None,
-//         });
-//     }
-//     Ok(out)
-// }
+        if end0 <= start0 { continue; }
+
+        let chrom = seqs[i].to_string();
+        regions.push(bigwig::Region {
+            chrom,
+            start: start0,
+            end: end0,
+            strand: strand.get(i).and_then(|s| {
+                if s.len() == 1 {
+                    let c = s.chars().next().unwrap();
+                    if c == '+' || c == '-' || c == '.' {
+                        Some(c)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            }),
+            name: Some(names[i].to_string()),
+            coverage_bins: None,
+        });
+    }
+
+    
+    let iresults = bigwig::read_bigwig(bw_path_str, regions, bin_size, method, Some(nthreads), bigwig::Missing::NaN).unwrap();
+
+    // eprintln!("{:?}", results);
+    println!("Done reading bigWig file");
+    let results = convert_region_to_robj(&iresults);
+
+
+    return results;
+}
+
 
 
 pub fn convert_region_to_robj(regions: &Vec<Region>) -> List {
@@ -142,12 +191,16 @@ pub fn convert_region_to_robj(regions: &Vec<Region>) -> List {
         // Build one R list for this region
         let coverage = r.coverage_bins.clone().unwrap_or_default();
 
+        let strand = r.strand.unwrap_or('.'); // Use '.' if strand is None
+        let strand_char = strand.to_string();
+
         // If you want named fields in each element:
         let region_list = list!(
             chrom    = r.chrom.clone(),
             start    = r.start as i64,   // R likes integers as i32/i64
             end      = r.end   as i64,
             name     = r.name.clone().unwrap_or_default(),
+            strand   = strand_char, // Convert char to String for R
             coverage = coverage          // Vec<f32> converts to R numeric
         );
 
@@ -166,5 +219,6 @@ pub fn convert_region_to_robj(regions: &Vec<Region>) -> List {
 // See corresponding C code in `entrypoint.c`.
 extendr_module! {
     mod pacbiowdlR;
-    fn read_bed;
+    fn read_bigwig_using_bed;
+    fn read_bigwig_using_gr;
 }

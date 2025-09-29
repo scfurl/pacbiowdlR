@@ -22,15 +22,149 @@ editor_options:
 
 
 ```{r}
-#' Read a BED file as GRanges
-#'
-#' @param bed Path to a BED file (.bed / .bed.gz). Can be URL understood by rtracklayer.
-#' @param keep_std_chroms Logical; keep only standard chromosomes (1-22, X, Y, MT/chrM).
-#' @param style Desired seqlevels style: "UCSC" (chr1) or "NCBI" (1).
-#' @param genome Optional genome string to set on the GRanges (e.g. "hg38", "GRCh38").
-#' @return GRanges
-#' @examples
-#' gr <- read_bed_as_granges("regions.bed")
+gff <- "/Users/sfurlan/refs/GRCh38/gencode.v49.annotation.gff3"
+data <- import(gff)
+can <- pbmcapply::pbmclapply(data$tag, function(vec) grep("Ensembl_canonical", vec), mc.cores = detectCores())
+hits <- which(sapply(can, function(item) length(item)>0))
+canonical <- data[hits,]
+tss <- canonical[canonical$type=="start_codon",]
+start(tss) <- start(tss) - 2000
+end(tss) <- end(tss) + 2000
+tss$name <- tss$gene_name
+
+tornado_plot(bw, tss)
+tornado_plot(bwm, tss)
+```
+
+
+
+
+```{r}
+library(pacbiowdlR)
+###REQUIRED FUNCTIONS
+
+
+# make a matrix (regions x bins). If lengths differ, pad with NA (left-align).
+as_matrix <- function(out) {
+  lens <- vapply(out, function(r) length(cov_vec(r)), integer(1))
+  if (length(unique(lens)) != 1L) {
+    L <- max(lens)
+    mat <- t(vapply(out, function(r) {
+      v <- cov_vec(r)
+      c(v, rep(NA_real_, L - length(v)))
+    }, numeric(L)))
+  } else {
+    L <- lens[1]
+    mat <- t(vapply(out, function(r) as.numeric(r$coverage), numeric(L)))
+  }
+  rownames(mat) <- vapply(out, function(r) if (!is.null(r$name)) r$name else "", character(1))
+  mat
+}
+
+# pull coverage vector; gracefully handle NULL/NA
+cov_vec <- function(r) {
+  v <- r$coverage
+  if (is.null(v)) numeric(0) else as.numeric(v)
+}
+
+
+tornado_plot <- function(bigwig, 
+             features,
+             bin_size = 40,
+             method = "mean",
+             drop_empty_rows = TRUE,
+             order_rows = TRUE,
+             top_percentile = 0.98, 
+             bottom_percentile = 0.02, 
+             cols = rev(c("darkblue", "royalblue", "lightblue", "white", "lightyellow", "orange", "red", "darkred")),
+             na_col = "black",
+             nthreads = detectCores(),
+             use_raster = TRUE,          # smoother & faster
+             raster_quality = 1
+  ){
+  if(class(features)=="GRanges"){
+    features = list(as.character(features@seqnames), as.integer(features@ranges@start), as.integer(features@ranges@start+features@ranges@width -1), as.character(features@strand), features$name)
+    out <- read_bigwig_using_gr(features, bw_path = bigwig, bin_size = bin_size, method = method, nthreads = nthreads)
+    
+  } else {
+    if(!file.exists(features)){stop("feature argument must be a Granges object or a path to a valid bed file")}
+    out <- read_bigwig_using_bed(bed_path = features, bw_path = bigwig, bin_size = bin_size, method = method, nthreads = nthreads)
+  }
+  
+  
+  m <- as_matrix(out)
+  if(order_rows){
+    ord <- order(rowMeans(m, na.rm = TRUE), decreasing = TRUE)
+    m <- m[ord, , drop=FALSE]
+  }
+  if(drop_empty_rows){
+    keep <- rowSums(is.finite(m) & m != 0) > 0
+    m <- m[keep, , drop=FALSE]
+  }
+
+  zmin  <- as.numeric(quantile(m, bottom_percentile, na.rm = TRUE)) 
+  zmax  <- as.numeric(quantile(m, top_percentile, na.rm = TRUE))  
+  m_cap <- pmin(pmax(m, zmin), zmax)
+
+  ComplexHeatmap::Heatmap(
+    m_cap,
+    name = "signal", 
+    col = cols,
+    na_col = na_col, 
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    show_row_names = FALSE,
+    show_column_names = FALSE,
+    use_raster = use_raster,
+    raster_quality = raster_quality
+  )
+}
+
+
+compute_matrix <- function(bigwig, 
+             features,
+             bin_size = 40,
+             method = "mean",
+             drop_empty_rows = TRUE,
+             order_rows = TRUE,
+             cap = TRUE,
+             top_percentile = 0.98, 
+             bottom_percentile = 0.02, 
+             nthreads = detectCores()
+  ){
+  if(class(features)=="GRanges"){
+    features = list(as.character(features@seqnames), as.integer(features@ranges@start), as.integer(features@ranges@start+features@ranges@width -1), as.character(features@strand), features$name)
+    out <- read_bigwig_using_gr(features, bw_path = bigwig, bin_size = bin_size, method = method, nthreads = nthreads)
+    
+  } else {
+    if(!file.exists(features)){stop("feature argument must be a Granges object or a path to a valid bed file")}
+    out <- read_bigwig_using_bed(bed_path = features, bw_path = bigwig, bin_size = bin_size, method = method, nthreads = nthreads)
+  }
+  
+  
+  m <- as_matrix(out)
+  if(order_rows){
+    ord <- order(rowMeans(m, na.rm = TRUE), decreasing = TRUE)
+    m <- m[ord, , drop=FALSE]
+  }
+  if(drop_empty_rows){
+    keep <- rowSums(is.finite(m) & m != 0) > 0
+    m <- m[keep, , drop=FALSE]
+  }
+
+  if(cap){
+    zmin  <- as.numeric(quantile(m, bottom_percentile, na.rm = TRUE)) 
+    zmax  <- as.numeric(quantile(m, top_percentile, na.rm = TRUE))  
+    m_cap <- pmin(pmax(m, zmin), zmax)
+    return(m_cap)
+  } else {
+    return(m)
+  }
+}
+
+
+
+
 read_bed_as_granges <- function(bed,
                                 keep_std_chroms = TRUE,
                                 style = c("UCSC", "NCBI"),
@@ -109,7 +243,7 @@ read_bed_as_granges <- function(bed,
   if (keep_std_chroms) {
     std <- GenomeInfoDb::standardChromosomes(gr)
     if (length(std)) {
-      gr <- gr[GenomeInfoDb::seqnames(gr) %in% std]
+      gr <- gr[as.character(GenomeInfoDb::seqnames(gr)) %in% std]
     }
   }
 
@@ -125,368 +259,55 @@ read_bed_as_granges <- function(bed,
 
   gr
 }
-
-
-
 ```
 
 ```{r}
+library(GenomicRanges)
+nn<-read_json_file("/Volumes/furlan_s/sfurlan/250302_leuklong/pbWGS/LL4_SAdd/pacbiowdlR/outputs.json")
+bed <- "hg38_gene_promoters_2kb_up_2kb_down.bed"
+bwm <- nn$humanwgs_singleton.cpg_combined_bw
+bw <- "/Volumes/furlan_s/sfurlan/250302_leuklong/fibertools/FIRE/results/LL4_SAdd/trackHub-v0.1.1/bw/all.fire.coverage.bw"
+#bed <- "peaks.bed"
 
-bed <- "hg38_gene_promoters_2kb_up_2kp_down.bed"
-peaks <- "LL2_EW1-fire-v0.1.1-peaks.bed.gz"
-gr <- read_bed_as_granges(bed)
-grp <- read_bed_as_granges(peaks)
+am <- compute_matrix(bw, gr)
+mm <- compute_matrix(bwm, gr)
 
-gr <- gr[overlapsAny(gr, grp),]
-export(gr, "hg38_gene_promoters_peaks_intersect.bed")
-export(grp, "peaks.bed")
-```
+dim(am)
+dim(mm)
 
-```{r}
-library(pacbiowdlR)
-bed <- "hg38_gene_promoters_2kb_up_2kp_down.bed"
-bed <- "hg38_gene_promoters_peaks_intersect.bed"
-bed <- "peaks.bed"
-bw <- "LL2_EW1.GRCh38.cpg_pileup.combined.bw"
-bw <- "NSDall.fire.coverage.bw"
-bw <- "all.fire.coverage.bw"
-system.time(out <- read_bed(bed, bw, 20, "mean", 1))
-system.time(out <- read_bed(bed, bw, 4, "mean", 16))
-```
+amf <- am[intersect(rownames(am), rownames(mm)),]
+mmf <- mm[intersect(rownames(am), rownames(mm)),]
 
+mmf <- mmf[rownames(amf),]
 
-```{r}
-# install if needed:
-# install.packages("ragg")
-# BiocManager::install("ComplexHeatmap")
-# BiocManager::install("circlize")
-
-library(ragg)
-library(ComplexHeatmap)
-library(circlize)
-
-# pull coverage vector; gracefully handle NULL/NA
-cov_vec <- function(r) {
-  v <- r$coverage
-  if (is.null(v)) numeric(0) else as.numeric(v)
-}
-
-
-# make a matrix (regions x bins). If lengths differ, pad with NA (left-align).
-as_matrix <- function(out) {
-  lens <- vapply(out, function(r) length(cov_vec(r)), integer(1))
-  if (length(unique(lens)) != 1L) {
-    L <- max(lens)
-    mat <- t(vapply(out, function(r) {
-      v <- cov_vec(r)
-      c(v, rep(NA_real_, L - length(v)))
-    }, numeric(L)))
-  } else {
-    L <- lens[1]
-    mat <- t(vapply(out, function(r) as.numeric(r$coverage), numeric(L)))
-  }
-  rownames(mat) <- vapply(out, function(r) if (!is.null(r$name)) r$name else "", character(1))
-  mat
-}
-
-# optional per-row z-score (similar to plotHeatmap --zMax/--zMin usage)
-row_zscore <- function(mat) {
-  mu  <- rowMeans(mat, na.rm = TRUE)
-  sig <- apply(mat, 1, stats::sd, na.rm = TRUE)
-  sweep(sweep(mat, 1, mu, "-"), 1, ifelse(sig == 0 | is.na(sig), 1, sig), "/")
-}
-
-
-mat <- as_matrix(out)    
-
-dim(mat)
-
-# Assume you already built mat: regions x bins numeric matrix
-# (from your read_bed output). Example sorting like deeptools:
-middle_frac <- 0.2
-inds <- floor(((1-middle_frac)/2)*ncol(mat)) : ceiling((1-((1-middle_frac)/2))*ncol(mat))
-stat <- rowMeans(mat[,inds], na.rm = TRUE)     # or rowMaxs/median/sum as you like
-ord  <- order(stat, decreasing = TRUE)  # deeptools-like descending
-mat_sorted <- mat[ord, , drop = FALSE]
-
-# Color mapping: clip extremes to stabilize colors
-zmin <- quantile(mat_sorted, 0.02, na.rm = TRUE)
-zmax <- quantile(mat_sorted, 0.98, na.rm = TRUE)
-col_fun <- colorRamp2(c(zmin, (zmin+zmax)/2, zmax), c("#313695", "#FFFFBF", "#A50026"))
-
-
-Heatmap(mat_sorted, cluster_rows = F, cluster_columns = F, show_row_names = F)
-
-
-
-
-
-
-
-mat_plot <- mat_sorted
-mat_plot <- row_zscore(mat_plot)  # uncomment for per-row z-score
-Heatmap(mat_plot, cluster_rows = F, cluster_columns = F, show_row_names = F)
-
-
-
-# Assume you already built mat: regions x bins numeric matrix
-# (from your read_bed output). Example sorting like deeptools:
-stat <- rowMeans(mat, na.rm = TRUE)     # or rowMaxs/median/sum as you like
-ord  <- order(stat, decreasing = TRUE)  # deeptools-like descending
-mat_sorted <- mat[ord, , drop = FALSE]
-
-# Color mapping: clip extremes to stabilize colors
-zmin <- quantile(mat_sorted, 0.02, na.rm = TRUE)
-zmax <- quantile(mat_sorted, 0.98, na.rm = TRUE)
-col_fun <- colorRamp2(c(zmin, (zmin+zmax)/2, zmax), c("#313695", "#FFFFBF", "#A50026"))
-
-# OPTION A: simple sort (fastest)
-ht <- Heatmap(
-  mat_sorted,
-  name = "signal",
-  use_raster = TRUE,              # <- rasterize heatmap body
-  raster_device = "png",          # <- use PNG rasterization
-  raster_quality = 90,            # quality hint (used by some devices)
-  cluster_rows = FALSE,
-  cluster_columns = FALSE,        # usually no need to cluster columns for profiles
-  show_row_names = FALSE,
-  show_column_names = FALSE,
-  row_title = NULL,
-  column_title = "Bins across promoter window",
-  col = col_fun,
-  heatmap_legend_param = list(direction = "vertical", title = "signal"),
-  border = FALSE
-)
-
-ht
-
-# OPTION B: k-means stripes (deeptools --kmeans). Fast & tidy.
-# Comment OPTION A and uncomment this to use K-means:
-# ht <- Heatmap(
-#   mat,
-#   name = "signal",
-#   use_raster = TRUE,
-#   raster_device = "png",
-#   raster_quality = 90,
-#   row_km = 200,                 # number of clusters/stripes (tune 50–300)
-#   row_km_repeats = 1,           # keep it quick
-#   cluster_rows = FALSE,         # k-means replaces hierarchical clustering
-#   cluster_columns = FALSE,
-#   show_row_names = FALSE,
-#   show_column_names = FALSE,
-#   row_title = NULL,
-#   column_title = "Bins across promoter window",
-#   col = col_fun,
-#   heatmap_legend_param = list(direction = "vertical", title = "signal"),
-#   border = FALSE
-# )
-
-# Draw with ragg (raster device). Adjust size/res to taste.
-ragg::agg_png("heatmap2.png", width = 1600, height = 2400, res = 150)
-draw(ht, merge_legend = TRUE, heatmap_legend_side = "right")
-dev.off()
-
-# Profile plot (average over rows) — quick companion figure
-profile <- colMeans(mat_sorted, na.rm = TRUE)
-ragg::agg_png("profile.png", width = 1200, height = 600, res = 150)
-plot(profile, type = "l", xlab = "Bins", ylab = "Mean signal",
-     main = "Average profile across promoters")
-dev.off()
-
-
-```
-
-```{r}
-## --- 0) Helpers -------------------------------------------------------------
-
-# pull coverage vector; gracefully handle NULL/NA
-cov_vec <- function(r) {
-  v <- r$coverage
-  if (is.null(v)) numeric(0) else as.numeric(v)
-}
-
-# make a matrix (regions x bins). If lengths differ, pad with NA (left-align).
-as_matrix <- function(out) {
-  lens <- vapply(out, function(r) length(cov_vec(r)), integer(1))
-  if (length(unique(lens)) != 1L) {
-    L <- max(lens)
-    mat <- t(vapply(out, function(r) {
-      v <- cov_vec(r)
-      c(v, rep(NA_real_, L - length(v)))
-    }, numeric(L)))
-  } else {
-    L <- lens[1]
-    mat <- t(vapply(out, function(r) as.numeric(r$coverage), numeric(L)))
-  }
-  rownames(mat) <- vapply(out, function(r) if (!is.null(r$name)) r$name else "", character(1))
-  mat
-}
-
-# deeptools-like row stat for sorting
-row_stat <- function(mat, method = c("mean","max","median","sum")) {
-  method <- match.arg(method)
-  fun <- switch(method,
-    mean = function(x) mean(x, na.rm = TRUE),
-    max  = function(x) max(x,  na.rm = TRUE),
-    median = function(x) stats::median(x, na.rm = TRUE),
-    sum  = function(x) sum(x,  na.rm = TRUE)
+ComplexHeatmap::Heatmap(
+    amf,
+    name = "signal", 
+    col = rev(c("darkblue", "royalblue", "lightblue", "white", "lightyellow", "orange", "red", "darkred")),
+    na_col = "black",
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    show_row_names = FALSE,
+    show_column_names = FALSE,
+    use_raster = T,
+    raster_quality = 1
   )
-  apply(mat, 1, fun)
-}
 
-# optional per-row z-score (similar to plotHeatmap --zMax/--zMin usage)
-row_zscore <- function(mat) {
-  mu  <- rowMeans(mat, na.rm = TRUE)
-  sig <- apply(mat, 1, stats::sd, na.rm = TRUE)
-  sweep(sweep(mat, 1, mu, "-"), 1, ifelse(sig == 0 | is.na(sig), 1, sig), "/")
-}
 
-## --- 1) Build matrix --------------------------------------------------------
-
-mat <- as_matrix(out)             # regions x bins
-
-## --- 2) Sort rows like deeptools --sortRegions -----------------------------
-
-stat <- row_stat(mat, method = "mean")  # "mean" | "max" | "median" | "sum"
-ord  <- order(stat, decreasing = TRUE)  # HIGH to LOW (deeptools default feel)
-mat_sorted <- mat[ord, , drop = FALSE]
-
-## --- 3) (Optional) Cluster rows like --kmeans / --hclust --------------------
-
-# K-means (deeptools --kmeans N)
-# set.seed for reproducibility
-set.seed(1)
-k <- 5
-km <- stats::kmeans(mat_sorted, centers = k, iter.max = 50, nstart = 10)
-cl <- km$cluster
-
-# Reorder by cluster, then by stat within cluster
-ord2 <- order(cl, stat[ord], decreasing = TRUE)
-mat_km <- mat_sorted[ord2, , drop = FALSE]
-cl_km  <- cl[ord2]
-
-# OR hierarchical clustering (deeptools --hclust)
-# d  <- dist(mat_sorted)
-# hc <- hclust(d, method = "ward.D2")
-# mat_hc <- mat_sorted[hc$order, , drop = FALSE]
-
-## --- 4) Optional: z-score per row (common for heatmaps) ---------------------
-
-mat_plot <- mat_km
-mat_plot <- row_zscore(mat_km)  # uncomment for per-row z-score
-
-## --- 5) Plot heatmap --------------------------------------------------------
-
-# Option B (nicer): ComplexHeatmap if installed
-if (requireNamespace("ComplexHeatmap", quietly = TRUE)) {
-  Heatmap <- ComplexHeatmap::Heatmap
-  ha <- ComplexHeatmap::rowAnnotation(cluster = as.factor(cl_km))
-  Heatmap(mat_plot, name = "signal",
-          show_row_names = FALSE,
-          show_column_names = FALSE,
-          left_annotation = ha)
-}
-
-## --- 6) Plot average profile (plotProfile-like) ----------------------------
-
-profile <- colMeans(mat_km, na.rm = TRUE)
-plot(profile, type = "l", xlab = "Bins", ylab = "Mean signal",
-     main = "Average profile across regions")
+ComplexHeatmap::Heatmap(
+    mmf,
+    name = "signal", 
+    col = rev(c("darkblue", "royalblue", "lightblue", "white", "lightyellow", "orange", "red", "darkred")),
+    na_col = "black",
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    show_row_names = FALSE,
+    show_column_names = FALSE,
+    use_raster = T,
+    raster_quality = 1
+  )
 
 
 ```
 
-
-```{r, eval=TRUE}
-
-library(pacbiowdlR)
-file <- "/Volumes/furlan_s/sfurlan/250520_leuklong/pbWGS/LL2_EW1/pacbiowdlR/outputs.json"
-ew <- read_json_file(file)
-mbw <- ew$humanwgs_singleton.cpg_combined_bw
-abw <- "/Volumes/furlan_s/sfurlan/250520_leuklong/fibertools/FIRE/results/bigwigs/LL2_EW1-fire-v0.1.1-pileup_shrunk.bw"
-
-#BiocManager::install("profileplyr")
-library(profileplyr)
-signalFiles <- c(mbw, abw)
-
-# BAMs must be indexed
-require(Rsamtools)
-# for (i in seq_along(signalFiles)){
-#   indexBam(signalFiles[i])
-# }
-
-testRanges <- system.file("extdata", 
-                          "newranges_small.bed", 
-                          package = "profileplyr")
-
-library(GenomicFeatures)
-library(TxDb.Hsapiens.UCSC.hg38.knownGene)  # GRCh38 (hg38)
-library(rtracklayer)
-
-txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
-
-# Promoters: 2000 bp upstream, 200 bp downstream of TSS (stranded-aware)
-proms <- promoters(txdb, upstream = 2000, downstream = 200)
-BiocManager::install(c("ensembldb","EnsDb.Hsapiens.v86","GenomicFeatures","rtracklayer"))
-library(ensembldb)
-library(EnsDb.Hsapiens.v86)   # Ensembl v86 (GRCh38)
-library(GenomicFeatures)
-library(rtracklayer)
-
-edb <- EnsDb.Hsapiens.v86
-
-# Get transcripts as GRanges (includes strand & gene IDs)
-tx <- transcripts(edb, return.type = "GRanges")
-
-# Build promoter ranges around TSS (e.g., 2kb up, 200bp down)
-proms <- promoters(tx, upstream = 2000, downstream = 200)
-proms <- promoters(tx, upstream = 2000, downstream = 2000)
-# Compute CDS length per transcript; fallback to transcript length if no CDS
-cds <- cdsBy(edb, by = "tx")                 # GRangesList keyed by tx
-cds_len <- sum(width(cds))                   # numeric vector by tx
-tx$cds_len <- cds_len[names(tx)]
-tx$cds_len[is.na(tx$cds_len)] <- width(tx)[is.na(tx$cds_len)]
-
-# Pick the transcript with the longest CDS per gene
-tx_by_gene <- split(tx, tx$gene_id)
-tx_rep <- do.call(c, lapply(tx_by_gene, function(g) g[ which.max(g$cds_len) ]))
-tx_rep <- unlist(GRangesList(tx_rep))
-# Derive gene-level promoters from that representative TSS
-tss_rep <- resize(tx_rep, width = 1, fix = "start")  # start = TSS (strand-aware)
-prom_gene <- promoters(tss_rep, upstream = 2000, downstream = 200)
-
-# Keep gene_name if present
-if ("gene_name" %in% colnames(mcols(tx_rep))) {
-  prom_gene$symbol <- mcols(tx_rep)$gene_name
-}
-
-prom_gene
-
-
-export(prom_gene, "hg38_gene_promoters_2kb_up_2kp_down.bed")
-
-
-chipProfile <- BamBigwig_to_chipProfile(signalFiles, 
-                         "hg38_gene_promoters_longestCDS_2kb_up_200bp_down.bed", 
-                         format = "bigwig",
-                         paired=FALSE,
-                         style="percentOfRegion",
-                         nOfWindows=20,
-                         distanceAround=40
-                         )
-proplyrObject <- as_profileplyr(chipProfile)
-which(is.na(proplyrObject@assays@data[[1]]))
-which(is.na(proplyrObject@assays@data[[2]]))
-which(is.infinite(proplyrObject@assays@data[[1]]))
-which(is.infinite(proplyrObject@assays@data[[2]]))
-which(is.nan(proplyrObject@assays@data[[1]]))
-which(is.nan(proplyrObject@assays@data[[2]]))
-kmeans <- clusterRanges(proplyrObject, scaleRows = T,
-                        fun = rowMax, 
-                        kmeans_k = 4, 
-                        silent = T)
-
-
-
-```
 
