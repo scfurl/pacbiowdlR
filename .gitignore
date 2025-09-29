@@ -1,3 +1,7 @@
+.github/
+Cargo.lock
+man/.DS_Store
+target/
 .Rproj.user
 .Rhistory
 .RData
