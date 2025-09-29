@@ -22,6 +22,8 @@ editor_options:
 
 
 ```{r}
+library(rtracklayer)
+library(parallel)
 gff <- "/Users/sfurlan/refs/GRCh38/gencode.v49.annotation.gff3"
 data <- import(gff)
 can <- pbmcapply::pbmclapply(data$tag, function(vec) grep("Ensembl_canonical", vec), mc.cores = detectCores())
@@ -32,8 +34,6 @@ start(tss) <- start(tss) - 2000
 end(tss) <- end(tss) + 2000
 tss$name <- tss$gene_name
 
-tornado_plot(bw, tss)
-tornado_plot(bwm, tss)
 ```
 
 
@@ -263,14 +263,16 @@ read_bed_as_granges <- function(bed,
 
 ```{r}
 library(GenomicRanges)
+library(ComplexHeatmap)
 nn<-read_json_file("/Volumes/furlan_s/sfurlan/250302_leuklong/pbWGS/LL4_SAdd/pacbiowdlR/outputs.json")
 bed <- "hg38_gene_promoters_2kb_up_2kb_down.bed"
-bwm <- nn$humanwgs_singleton.cpg_combined_bw
-bw <- "/Volumes/furlan_s/sfurlan/250302_leuklong/fibertools/FIRE/results/LL4_SAdd/trackHub-v0.1.1/bw/all.fire.coverage.bw"
+#bwm <- nn$humanwgs_singleton.cpg_combined_bw
+bwa <- "/Users/sfurlan/Library/CloudStorage/OneDrive-SharedLibraries-FredHutchCancerCenter/Furlan_Lab_2025 - General/experiments/Leuklong/temp/NN_AML/all.fire.coverage.bw"
+bwm <- "/Users/sfurlan/Library/CloudStorage/OneDrive-SharedLibraries-FredHutchCancerCenter/Furlan_Lab_2025 - General/experiments/Leuklong/temp/NN_AML/LL4_SAdd.GRCh38.cpg_pileup.combined.bw"
 #bed <- "peaks.bed"
 
-am <- compute_matrix(bw, gr)
-mm <- compute_matrix(bwm, gr)
+am <- compute_matrix(bwa, tss)
+mm <- compute_matrix(bwm, tss)
 
 dim(am)
 dim(mm)
@@ -279,6 +281,9 @@ amf <- am[intersect(rownames(am), rownames(mm)),]
 mmf <- mm[intersect(rownames(am), rownames(mm)),]
 
 mmf <- mmf[rownames(amf),]
+
+top <- data.frame(signal=colMeans(amf, na.rm = T), position=1:ncol(amf))
+
 
 ComplexHeatmap::Heatmap(
     amf,
@@ -290,7 +295,8 @@ ComplexHeatmap::Heatmap(
     show_row_names = FALSE,
     show_column_names = FALSE,
     use_raster = T,
-    raster_quality = 1
+    raster_quality = 1,
+    top_annotation = columnAnnotation(signal=anno_points(colMeans(amf, na.rm = T)))
   )
 
 
@@ -307,6 +313,8 @@ ComplexHeatmap::Heatmap(
     raster_quality = 1
   )
 
+
+ggplot(data.frame(signal=colMeans(amf, na.rm = T), position=1:ncol(amf)), aes(x=position, y=signal))+geom_line()+theme_void()
 
 ```
 
