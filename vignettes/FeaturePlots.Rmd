@@ -288,7 +288,22 @@ top <- data.frame(signal=colMeans(amf, na.rm = T), position=1:ncol(amf))
 ComplexHeatmap::Heatmap(
     amf,
     name = "signal", 
-    col = rev(c("darkblue", "royalblue", "lightblue", "white", "lightyellow", "orange", "red", "darkred")),
+    col = rev(c("darkblue", "blue", "royalblue", "lightblue",  "lightyellow", "yellow", "orange", "red", "darkred")),
+    na_col = "white",
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    show_row_names = FALSE,
+    show_column_names = FALSE,
+    use_raster = T,
+    raster_quality = 1,
+    top_annotation = columnAnnotation(signal=anno_lines(colMeans(amf, na.rm = T), gp = gpar(col = "blue")))
+  )
+
+
+ComplexHeatmap::Heatmap(
+    mmf,
+    name = "signal", 
+    col = rev(c("darkblue", "royalblue", "lightblue", "white","lightyellow", "pink")),
     na_col = "black",
     cluster_rows = FALSE,
     cluster_columns = FALSE,
@@ -296,26 +311,147 @@ ComplexHeatmap::Heatmap(
     show_column_names = FALSE,
     use_raster = T,
     raster_quality = 1,
-    top_annotation = columnAnnotation(signal=anno_points(colMeans(amf, na.rm = T)))
+    top_annotation = columnAnnotation(signal=anno_lines(colMeans(mmf, na.rm = T)))
+  )
+
+
+```
+
+```{r}
+library(JASPAR2022)
+library(TFBSTools)
+library(Biostrings)
+library(BSgenome.Hsapiens.UCSC.hg38) # or your genome
+library(motifmatchr)                 # fast scanning to GRanges
+library(GenomicRanges)
+
+# 1) Get the CTCF motif
+pfm_list <- getMatrixSet(
+  JASPAR2022, 
+  opts = list(name = "CTCF", species="Homo sapiens")
+)
+pfm <- pfm_list[[1]]                 # choose MA0139.* you prefer
+
+# 2) Convert to PWM and scan
+pwm <- toPWM(pfm, type="log2probratio", pseudocounts=0.8)
+# Build tiling windows or scan chromosome by chromosome:
+seqs <- getSeq(BSgenome.Hsapiens.UCSC.hg38) # all chromosomes
+hits <- matchMotifs(pwm, seqs, out = "positions", p.cutoff = 1e-4)
+hits <- hits[[1]][names(seqs) %in% paste0("chr", c(1:22, "X", "Y", "M"))]
+seqs <- names(seqs)[names(seqs) %in% paste0("chr", c(1:22, "X", "Y", "M"))]
+# 3) GRanges of motif hits
+gr_list <- lapply(seq_along(hits), function(n) {
+  ir <- hits[[n]]
+  st <- mcols(ir)$strand
+  sc <- mcols(ir)$score
+  mcols(ir)$strand <- NULL
+  mcols(ir)$score  <- NULL
+  g <- GRanges(seqnames = seqs[n], ranges = ir, strand = st)
+  mcols(g)$score <- sc
+  g
+})
+ctcf_gr <- do.call(c, gr_list)
+ctcf_gr$name <- paste0("ctcf", 1:length(ctcf_gr))
+
+
+am <- compute_matrix(bwa, ctcf_gr, bin_size = 1)
+mm <- compute_matrix(bwm, ctcf_gr, bin_size = 1)
+
+dim(am)
+dim(mm)
+
+amf <- am[intersect(rownames(am), rownames(mm)),]
+mmf <- mm[intersect(rownames(am), rownames(mm)),]
+
+mmf <- mmf[rownames(amf),]
+
+
+ComplexHeatmap::Heatmap(
+    amf,
+    name = "signal", 
+    col = rev(c("darkblue", "blue", "royalblue", "lightblue",  "lightyellow", "yellow", "orange", "red", "darkred")),
+    na_col = "white",
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    show_row_names = FALSE,
+    show_column_names = FALSE,
+    use_raster = T,
+    raster_quality = 1,
+    top_annotation = columnAnnotation(signal=anno_lines(colMeans(amf, na.rm = T), gp = gpar(col = "blue")))
   )
 
 
 ComplexHeatmap::Heatmap(
     mmf,
     name = "signal", 
-    col = rev(c("darkblue", "royalblue", "lightblue", "white", "lightyellow", "orange", "red", "darkred")),
+    col = rev(c("darkblue", "royalblue", "lightblue", "white","lightyellow", "pink")),
     na_col = "black",
     cluster_rows = FALSE,
     cluster_columns = FALSE,
     show_row_names = FALSE,
     show_column_names = FALSE,
-    use_raster = T,
-    raster_quality = 1
+    use_raster = F,
+    raster_quality = 1,
+    top_annotation = columnAnnotation(signal=anno_lines(colMeans(mmf, na.rm = T)))
   )
 
 
-ggplot(data.frame(signal=colMeans(amf, na.rm = T), position=1:ncol(amf)), aes(x=position, y=signal))+geom_line()+theme_void()
-
 ```
 
+
+```{r}
+library(rtracklayer)
+path = "data/hg19ToHg38.over.chain"
+ch = import.chain(path)
+d <- openxlsx::read.xlsx("/Users/sfurlan/develop/pacbiowdlR/data/SuppTables.xlsx", sheet = "SuppTable2- CTCF binding sites")
+d[,8] <- gsub("\\.", "*", d[,8])
+ctcf <- GRanges(seqnames = d[,2], ranges = IRanges(start = d[,5], end = d[,6]), strand = d[,8])
+ctcf_hg38 <-  liftOver(ctcf, ch)
+ctcf_2kb <- unlist(resize(ctcf_hg38, width = 2000, fix = "center"))
+ctcf_2kb$name <- paste0("ctcf", 1:length(ctcf_2kb))
+
+
+am <- compute_matrix(bwa, ctcf_2kb, bin_size = 2)
+mm <- compute_matrix(bwm, ctcf_2kb, bin_size = 20)
+
+dim(am)
+dim(mm)
+
+amf <- am[intersect(rownames(am), rownames(mm)),]
+mmf <- mm[intersect(rownames(am), rownames(mm)),]
+
+mmf <- mmf[rownames(amf),]
+
+prot_ma <- t(apply(1-amf, 1, \(x) zoo::rollmean(x, 20/2, fill=NA, align="center"))) # 20 bp with bin_size=2
+
+ComplexHeatmap::Heatmap(
+    prot_ma,
+    name = "signal", 
+    col = rev(c("darkblue", "blue", "royalblue", "lightblue",  "lightyellow", "yellow", "orange", "red", "darkred")),
+    na_col = "white",
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    show_row_names = FALSE,
+    show_column_names = FALSE,
+    use_raster = T,
+    raster_quality = 1,
+    top_annotation = columnAnnotation(signal=anno_lines(colMeans(prot_ma, na.rm = T), gp = gpar(col = "blue")))
+  )
+
+
+mmf <- mm
+ComplexHeatmap::Heatmap(
+    mmf,
+    name = "signal", 
+    col = rev(c("darkblue", "royalblue", "lightblue", "red")),
+    na_col = "white",
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    show_row_names = FALSE,
+    show_column_names = FALSE,
+    use_raster = F,
+    raster_quality = 1,
+    top_annotation = columnAnnotation(signal=anno_lines(colMeans(mmf, na.rm = T)))
+  )
+```
 
