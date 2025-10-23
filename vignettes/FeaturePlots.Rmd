@@ -303,7 +303,7 @@ ComplexHeatmap::Heatmap(
 ComplexHeatmap::Heatmap(
     mmf,
     name = "signal", 
-    col = rev(c("darkblue", "royalblue", "lightblue", "white","lightyellow", "pink")),
+    col = rev(c("darkblue", "blue", "royalblue", "lightblue",  "lightyellow", "yellow", "orange", "red", "darkred")),
     na_col = "black",
     cluster_rows = FALSE,
     cluster_columns = FALSE,
@@ -315,6 +315,122 @@ ComplexHeatmap::Heatmap(
   )
 
 
+```
+
+
+## pull in RNA
+
+```{r}
+ r<-"/Volumes/furlan_s/sfurlan/250302_leuklong/250228_SF_iso-seq/LL4_SAdd/LL4_SAdd.collapsed.abundance.txt"
+rt <- read.table(r)
+
+
+```
+
+
+## scatter plot - fine but bullshit
+```{r}
+acc_score <- rowMeans(amf, na.rm = TRUE)
+met_score <- rowMeans(mmf, na.rm = TRUE)
+
+ggplot(data.frame(acc=acc_score, met = met_score), aes(x=acc, y=met))+geom_point()
+
+library(quantreg)
+library(ggrepel)
+tau <- 0.99  # top 1% frontier; lower for a thicker frontier
+
+df <- data.frame(acc=acc_score, met = met_score)
+fit <- rq(acc ~ met, tau = tau, data = df)
+pred <- predict(fit, newdata = df)
+upper_qr <- df[df$acc >= pred, ]  # points at/above the τ-quantile boundary
+
+tp <- upper_qr[upper_qr$met<15,]
+tp$gene <- rownames(tp)
+ggplot(df, aes(acc, met)) +
+  geom_point(alpha = 0.2, size = 0.8) +
+  geom_point(data = tp, aes(acc, met), color = "red", size = 1.2) +
+  geom_label_repel(data = tp, aes(acc, met, label = gene), max.overlaps = 200, ) +
+  theme_minimal()
+
+int_acc <- amf[rownames(tp),]
+int_met <- mmf[rownames(tp),]
+
+ComplexHeatmap::Heatmap(
+    int_met,
+    name = "signal", 
+    col = rev(c("darkblue", "blue", "royalblue", "lightblue",  "lightyellow", "yellow", "orange", "red", "darkred")),
+    na_col = "black",
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    show_row_names = FALSE,
+    show_column_names = FALSE,
+    use_raster = T,
+    raster_quality = 1,
+    top_annotation = columnAnnotation(signal=anno_lines(colMeans(int_met, na.rm = T)))
+  )
+
+
+ComplexHeatmap::Heatmap(
+    int_acc,
+    name = "signal", 
+    col = rev(c("darkblue", "blue", "royalblue", "lightblue",  "lightyellow", "yellow", "orange", "red", "darkred")),
+    na_col = "black",
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    show_row_names = T,
+    show_column_names = FALSE,
+    use_raster = T,
+    raster_quality = 1,
+    top_annotation = columnAnnotation(signal=anno_lines(colMeans(int_met, na.rm = T)))
+  )
+```
+
+## clustering fail
+```{r}
+jmf <- cbind(amf, mmf)
+dm <- dist(jmf, method = "euclidean")
+dm[is.na(dm)] <- 0   # or some appropriate value
+dm[is.infinite(dm)] <- max(dm[is.finite(dm)])
+hc <- hclust(dm, method = "ward.D2")
+cl <- cutree(hc, k = 10)
+row_order <- hc$order[order(cl[hc$order])]
+cl_fac    <- factor(cl, levels = sort(unique(cl)))
+
+
+Heatmap(
+  amf,
+  name = "Z",
+  col = rev(c("darkblue", "blue", "royalblue", "lightblue",  "lightyellow", "yellow", "orange", "red", "darkred")),
+  # use your dendrogram, split by cluster, and keep our custom order
+  cluster_rows = as.dendrogram(hc),
+  # row_split = cl_fac,
+  row_order = row_order,
+  # columns can be clustered or fixed as you like:
+  cluster_columns = FALSE,
+  show_row_names = FALSE,
+  show_column_names = FALSE,
+  use_raster = T,
+  raster_quality = 1
+)
+
+Heatmap(
+  mmf,
+  name = "Z",
+  col = rev(c("darkblue", "blue", "royalblue", "lightblue",  "lightyellow", "yellow", "orange", "red", "darkred")),
+  # use your dendrogram, split by cluster, and keep our custom order
+  cluster_rows = as.dendrogram(hc),
+  na_col = "black",
+  # row_split = cl_fac,
+  row_order = row_order,
+  # columns can be clustered or fixed as you like:
+  cluster_columns = FALSE,
+  show_row_names = FALSE,
+  show_column_names = FALSE,
+  use_raster = T,
+  raster_quality = 1,
+  left_annotation = rowAnnotation(Cluster = cl_fac, width = unit(3, "mm")),
+  top_annotation = columnAnnotation(signal=anno_lines(colMeans(mmf, na.rm = T)))
+)
 ```
 
 ```{r}
