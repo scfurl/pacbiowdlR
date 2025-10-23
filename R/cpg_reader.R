@@ -1,92 +1,109 @@
-#' Subset CpG Sites by GRanges Files
+#' Subset CpG Sites by GRanges Object
 #'
-#' This function processes a vector of filenames containing CpG site data and subsets them
-#' based on overlaps with a provided GRanges object. It returns either a list of raw data.tables
-#' from each file or a metric matrix of (averaged) beta values.
+#' @param dt A data.table containing CpG site data
+#' @param gr A GRanges object defining regions of interest
+#' @param fill_missing Logical. If TRUE, include all probes from gr with NA for uncovered probes
 #'
-#' @param filenames A character vector of filenames to be processed.
-#' @param gr A GRanges object. The names of \code{gr} (accessed via \code{names(gr)}) will be used to label
-#'   the rows in the metric matrix.
-#' @param output A character string indicating the type of output to return. \code{"raw"} (the default)
-#'   returns a list of raw data.tables with each table corresponding to a file. \code{"metric"}
-#'   returns a matrix (or data.frame) where rows correspond to \code{names(gr)} and columns correspond
-#'   to files, with cells containing the (averaged) beta values.
-#'
-#' @return If \code{output = "raw"}, a list of data.table objects is returned, where each data.table
-#'   has an additional column \code{file} indicating the source filename. If \code{output = "metric"},
-#'   a matrix (or data.frame) is returned with rownames corresponding to \code{names(gr)} and columns
-#'   corresponding to the files. For multiple overlaps in a given GRanges name, the beta values are averaged.
-#'
-#' @details For each file in \code{filenames}, the function reads in the data using \code{fread()} from the
-#'   \code{data.table} package and then subsets the CpG sites that overlap with the GRanges object by calling
-#'   \code{subset_cpg_by_GR}. Files yielding no overlaps are removed from the final results. For \code{"metric"}
-#'   output, the function creates a vector (with \code{NA} for missing overlaps) for each file, computing the
-#'   mean beta value for cases of multiple overlaps.
-#'
-#' @importFrom data.table fread
-#' @importFrom GenomicRanges GRanges
-#' @keywords internal
-#' @examples
-#' \dontrun{
-#' # Create an example GRanges object.
-#' gr <- GRanges(seqnames = "chr1", ranges = IRanges(start = c(1, 101), width = 100),
-#'               names = c("probe1", "probe2"))
-#'
-#' # Example vector of file names.
-#' file_vec <- c("file1.csv", "file2.csv")
-#'
-#' # Get raw output (list of data.tables)
-#' raw_output <- subset_cpg_by_GR_files(file_vec, gr, output = "raw")
-#'
-#' # Get metric matrix output
-#' metric_output <- subset_cpg_by_GR_files(file_vec, gr, output = "metric")
-#' }
+#' @return A data.table with overlapping CpG sites (and NAs if fill_missing=TRUE)
 #'
 #' @export
-subset_cpg_by_GR_files <- function(filenames, gr, output = c("raw", "metric")) {
+subset_cpg_by_GR <- function(dt, gr, fill_missing = FALSE) {
+  # Convert data.table to GRanges
+  dt_gr <- GRanges(
+    seqnames = dt$V1,
+    ranges = IRanges(start = dt$V2, end = dt$V3)
+  )
+  
+  # Find overlaps
+  overlaps <- findOverlaps(dt_gr, gr)
+  
+  # If no overlaps and not filling missing, return NULL
+  if (length(overlaps) == 0 && !fill_missing) {
+    return(NULL)
+  }
+  
+  if (length(overlaps) > 0) {
+    # Subset the data.table and add the GRanges names and beta values
+    result <- dt[queryHits(overlaps), ]
+    result[, name := names(gr)[subjectHits(overlaps)]]
+    result[, beta := V4]
+  } else {
+    result <- NULL
+  }
+  
+  # If fill_missing, create complete set with NAs for missing probes
+  if (fill_missing) {
+    all_probes <- data.table(name = names(gr))
+    
+    if (!is.null(result)) {
+      # Merge to include all probes
+      result <- merge(all_probes, result, by = "name", all.x = TRUE)
+    } else {
+      # No overlaps found, create all NA result
+      result <- all_probes
+      result[, beta := NA_real_]
+    }
+  }
+  
+  return(result)
+}
+
+#' Subset CpG Sites by GRanges Files
+#'
+#' @param filenames A character vector of filenames to be processed
+#' @param gr A GRanges object
+#' @param output Output type: "raw" or "metric"
+#' @param fill_missing Logical. If TRUE, include all probes with NA for uncovered probes
+#'
+#' @export
+subset_cpg_by_GR_files <- function(filenames, gr, output = c("raw", "metric"), fill_missing = TRUE) {
   output <- match.arg(output)
 
-  # Process each file and store the raw output in a list.
+  # Process each file and store the raw output in a list
   raw_list <- lapply(filenames, function(fn) {
     message("Processing file: ", fn)
     dt <- fread(fn)
-    res <- subset_cpg_by_GR(dt, gr)
+    res <- subset_cpg_by_GR(dt, gr, fill_missing = fill_missing)
     if (!is.null(res)) {
-      # Add a column indicating the source filename.
+      # Add a column indicating the source filename
       res[, file := fn]
     }
     return(res)
   })
 
-  # Remove any NULL results (in case some files had no overlaps).
+  # Remove any NULL results (in case some files had no overlaps)
   names(raw_list) <- filenames
   raw_list <- Filter(Negate(is.null), raw_list)
 
   if (output == "raw") {
     return(raw_list)
   } else if (output == "metric") {
-    # Create a metric matrix.
-    # Rows: names from the GRanges object.
-    # Columns: filenames; each cell will be the (averaged) beta value.
+    # Create a metric matrix
     probes <- names(gr)
-    # Create an empty list to hold beta values for each file.
     metric_list <- vector("list", length(filenames))
     names(metric_list) <- filenames
 
     for (fn in filenames) {
       dt <- raw_list[[fn]]
-      # Initialize a vector of NA with names equal to probes.
+      # Initialize a vector of NA with names equal to probes
       beta_vec <- setNames(rep(NA, length(probes)), probes)
       if (!is.null(dt)) {
-        # In case multiple overlaps occur for the same GR name, compute the average beta.
+        # In case multiple overlaps occur for the same GR name, compute the average beta
         dt_avg <- dt[, .(beta_val = mean(beta, na.rm = TRUE)), by = name]
-        # Update the vector with available beta values.
+        # Update the vector with available beta values
         beta_vec[dt_avg$name] <- dt_avg$beta_val
       }
       metric_list[[fn]] <- beta_vec
     }
-    # Combine the vectors into a matrix.
+    # Combine the vectors into a matrix
     metric_mat <- do.call(cbind, metric_list)
+    
+    # If fill_missing is FALSE, remove rows that are all NA
+    if (!fill_missing) {
+      rows_with_data <- apply(metric_mat, 1, function(x) !all(is.na(x)))
+      metric_mat <- metric_mat[rows_with_data, , drop = FALSE]
+    }
+    
     return(metric_mat)
   }
 }
