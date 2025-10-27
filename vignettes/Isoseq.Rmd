@@ -17,16 +17,6 @@ editor_options:
   chunk_output_type: console
 ---
 
-```{r setup, include = FALSE}
-knitr::opts_chunk$set(
-  collapse  = TRUE,
-  comment   = "#>",
-  eval      = params$EVAL,
-  fig.align = "center",
-  dpi       = 300,   # high-DPI source
-  fig.retina = 2     # down-sample for HiDPI (“retina”) displays
-)
-```
 
 
 ## 1  Overview
