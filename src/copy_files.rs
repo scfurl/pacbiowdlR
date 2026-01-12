@@ -269,7 +269,12 @@ fn main() -> Result<()> {
     if args.dry_run {
         println!("Dry run - the following operations would be performed:");
         for op in &file_operations {
-            let operation_type = if args.move_haplotagged_bam && op.key.contains("haplotagged_bam") {
+            let filename = op.source.file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("");
+            
+            let operation_type = if args.move_haplotagged_bam && 
+                                (filename.contains("haplotagged") && filename.ends_with(".bam")) {
                 "Move"
             } else {
                 "Copy"
