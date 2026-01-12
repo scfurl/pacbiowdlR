@@ -302,7 +302,13 @@ fn main() -> Result<()> {
         pool.install(|| {
             file_operations.par_iter().for_each(|op| {
                 // Determine if we should move or copy this file
-                let is_haplotagged_bam = op.key.contains("haplotagged_bam");
+                // let is_haplotagged_bam = op.key.contains("haplotagged_bam"); THIS WAS EDITED TO MAKE COMPATIBLE WITH THE SOMATIC PIPELINE
+                let filename = op.source.file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("");
+
+                let is_haplotagged_bam = (filename.contains("haplotagged") && filename.ends_with(".bam")) ||
+                         op.key.contains("haplotagged_bam");
                 let should_move = args.move_haplotagged_bam && is_haplotagged_bam;
 
                 // Update progress bar message with current file and operation
