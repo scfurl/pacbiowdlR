@@ -97,6 +97,27 @@ fn normalize_path(path: &Path) -> Result<PathBuf> {
     Ok(result)
 }
 
+/// Return the workflow output map from either a flat manifest or MiniWDL's
+/// top-level {"dir": ..., "outputs": {...}} result object.
+fn workflow_outputs(json_data: Value) -> Result<serde_json::Map<String, Value>> {
+    let mut root = match json_data {
+        Value::Object(map) => map,
+        _ => anyhow::bail!("JSON root must be an object"),
+    };
+
+    let is_miniwdl_result = matches!(root.get("dir"), Some(Value::String(_)))
+        && root.contains_key("outputs");
+    if !is_miniwdl_result {
+        return Ok(root);
+    }
+
+    match root.remove("outputs") {
+        Some(Value::Object(outputs)) => Ok(outputs),
+        Some(_) => anyhow::bail!("MiniWDL result field 'outputs' must be an object"),
+        None => unreachable!("MiniWDL result was checked for an outputs field"),
+    }
+}
+
 /// Process an array value, handling both flat arrays and nested arrays
 fn process_array(
     key: &str,
@@ -198,9 +219,8 @@ fn main() -> Result<()> {
     let mut file_operations = Vec::new();
     let mut new_json = HashMap::new();
 
-    if let Value::Object(map) = json_data {
-        for (key, value) in map {
-            match value {
+    for (key, value) in workflow_outputs(json_data)? {
+        match value {
                 Value::String(ref string_value) => {
                     // Check if this string looks like a file path
                     if is_likely_file_path(&string_value) {
@@ -260,9 +280,6 @@ fn main() -> Result<()> {
                     new_json.insert(key.clone(), value.clone());
                 }
             }
-        }
-    } else {
-        anyhow::bail!("JSON root must be an object");
     }
 
     // Execute file operations
@@ -383,6 +400,56 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn extracts_outputs_from_miniwdl_result() {
+        let result = workflow_outputs(json!({
+            "dir": "/tmp/run/workflow",
+            "outputs": {
+                "workflow.bam": "/tmp/run/workflow/sample.bam",
+                "workflow.version": "1.0"
+            }
+        }))
+        .unwrap();
+
+        assert_eq!(result.len(), 2);
+        assert_eq!(
+            result.get("workflow.bam"),
+            Some(&json!("/tmp/run/workflow/sample.bam"))
+        );
+        assert!(!result.contains_key("dir"));
+    }
+
+    #[test]
+    fn preserves_flat_output_manifest() {
+        let result = workflow_outputs(json!({
+            "workflow.bam": "/tmp/run/workflow/sample.bam",
+            "workflow.version": "1.0"
+        }))
+        .unwrap();
+
+        assert_eq!(result.len(), 2);
+        assert_eq!(result.get("workflow.version"), Some(&json!("1.0")));
+    }
+
+    #[test]
+    fn rejects_malformed_miniwdl_outputs() {
+        let error = workflow_outputs(json!({
+            "dir": "/tmp/run/workflow",
+            "outputs": []
+        }))
+        .unwrap_err();
+
+        assert_eq!(
+            error.to_string(),
+            "MiniWDL result field 'outputs' must be an object"
+        );
+    }
 }
 
 // fn main() -> Result<()> {
